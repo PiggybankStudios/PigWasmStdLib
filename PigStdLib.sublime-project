@@ -2,7 +2,73 @@
 	"folders":
 	[
 		{
-			"path": "."
+			"path": ".",
+			"folder_exclude_patterns": [
+				"musl_libc",
+				"lib",
+			],
+		},
+		{
+			"path": "lib/include/gylib",
+			"name": "GyLib",
+			"folder_exclude_patterns": [
+				"std",
+			],
+		},
+		{
+			"path": "musl_libc",
+			"name": "Musl Lib-C",
 		}
-	]
+	],
+	"settings":
+	{
+		"build_options":
+		[
+		],
+		"custom_constants":
+		[
+			"ARCH_NATIVE",
+			"ARCH_WASM",
+			"DECIMAL_DIG",
+			"EXTERN_C_END",
+			"EXTERN_C_START",
+			"FP_INFINITE",
+			"FP_NAN",
+			"FP_NORMAL",
+			"FP_SUBNORMAL",
+			"FP_ZERO",
+			"LANGUAGE_C",
+			"LANGUAGE_CPP",
+			"LDBL_DIG",
+			"LDBL_EPSILON",
+			"LDBL_MANT_DIG",
+			"LDBL_MAX",
+			"LDBL_MAX_10_EXP",
+			"LDBL_MAX_EXP",
+			"LDBL_MIN",
+			"LDBL_MIN_10_EXP",
+			"LDBL_MIN_EXP",
+			"LDBL_TRUE_MIN",
+			"OS_LINUX",
+			"OS_ORCA",
+			"OS_OSX",
+			"OS_PLAYDATE",
+			"OS_WINDOWS",
+			"STD_FORMAT_DLL",
+			"STD_FORMAT_LIB",
+		],
+		"custom_functions":
+		[
+			"#define isinf(x)",
+			"#define isnan(x)",
+			"#define signbit(value)",
+		],
+		"custom_globals":
+		[
+		],
+		"custom_types":
+		[
+			"ldshape",
+		],
+	},
 }

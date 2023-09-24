@@ -1,2 +1,8 @@
 musl_libc/
+lib/
+build/*
+!build/build.bat
+!build/build_gcc.bat
+!build/build_msvc.bat
+!build/build_clang.bat
 *.sublime-workspace

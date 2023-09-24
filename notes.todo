@@ -46,3 +46,39 @@
 		- casin     copysign  erf      lgamma   nexttowardl vsscanf
 		- catanf    cpowf     exp2f    llabs    nexttoward
 		- catanhf   cpowl     exp2l    llrintf  remainderf
+	[ ] There are also built-in versions of the ISO C99 functions (below) that are recognized in any mode since ISO C90 reserves these names for the purpose to which ISO C99 puts them. All these functions have corresponding versions prefixed with __builtin_.
+		- acosf  coshf  frexpf powl
+		- acosl  coshl  frexpl sinf
+		- asinf  cosl   ldexpf sinhf
+		- asinl  expf   ldexpl sinhl
+		- atan2f expl   log10f sinl
+		- atan2l fabsf  log10l sqrtf
+		- atanf  fabsl  logf   sqrtl
+		- atanl  floorf logl   tanf
+		- ceilf  floorl modfl  tanhf
+		- ceill  fmodf  modff  tanhl
+		- cosf   fmodl  powf   tanl
+	[ ] There are also built-in functions (below) corresponding to the TS 18661-3 functions fabsfn, fabsfnx, copysignfn and copysignfnx, for supported types _Floatn and _Floatnx. 
+		- __builtin_fabsfn
+		- __builtin_fabsfnx
+		- __builtin_copysignfn
+		- __builtin_copysignfnx
+	[ ] The ISO C90 functions (below) are all recognized as built-in functions unless -fno-builtin is specified (or -fno-builtin-function is specified for an individual function). All of these functions have corresponding versions prefixed with __builtin_. 
+		- abort   frexp    log      sscanf  vsprintf
+		- abs     fscanf   malloc   strcat
+		- acos    isalnum  memchr   strchr
+		- asin    isalpha  memcmp   strcmp
+		- atan2   iscntrl  memcpy   strcpy
+		- atan    isdigit  memset   strcspn
+		- calloc  isgraph  modf     strlen
+		- ceil    islower  pow      strncat
+		- cosh    isprint  printf   strncmp
+		- cos     ispunct  putchar  strncpy
+		- exit    isspace  puts     strpbrk
+		- exp     isupper  realloc  strrchr
+		- fabs    isxdigit scanf    strspn
+		- floor   tolower  sinh     strstr
+		- fmod    toupper  sin      tanh
+		- fprintf labs     snprintf tan
+		- fputs   ldexp    sprintf  vfprintf
+		- free    log10    sqrt     vprintf

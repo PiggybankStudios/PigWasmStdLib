@@ -7,15 +7,49 @@ Date:   09\23\2023
 #ifndef _MATH_H
 #define _MATH_H
 
+#include "std_common.h"
+
 // +--------------------------------------------------------------+
 // |                           Defines                            |
 // +--------------------------------------------------------------+
 #define NAN       __builtin_nanf("")
 #define INFINITY  __builtin_inff()
 
+#define FP_NAN       0
+#define FP_INFINITE  1
+#define FP_ZERO      2
+#define FP_SUBNORMAL 3
+#define FP_NORMAL    4
+
+// +--------------------------------------------------------------+
+// |                            Macros                            |
+// +--------------------------------------------------------------+
+#define isinf(value) (                                                                    \
+	sizeof(value) == sizeof(float) ? (__FLOAT_BITS((float)value) & 0x7fffffff) == 0x7f800000 :   \
+	sizeof(value) == sizeof(double) ? (__DOUBLE_BITS((double)value) & -1ULL>>1) == 0x7ffULL<<52 : \
+	__fpclassifyl((long double)value) == FP_INFINITE)
+
+#define isnan(value) (                                                                   \
+	sizeof(value) == sizeof(float) ? (__FLOAT_BITS((float)value) & 0x7fffffff) > 0x7f800000 :   \
+	sizeof(value) == sizeof(double) ? (__DOUBLE_BITS((double)value) & -1ULL>>1) > 0x7ffULL<<52 : \
+	__fpclassifyl((long double)value) == FP_NAN)
+
+#define signbit(value) (                                                \
+	sizeof(value) == sizeof(float) ? (int)(__FLOAT_BITS((float)value)>>31) :   \
+	sizeof(value) == sizeof(double) ? (int)(__DOUBLE_BITS((double)value)>>63) : \
+	__signbitl((long double)value) )
+
 // +--------------------------------------------------------------+
 // |                          Functions                           |
 // +--------------------------------------------------------------+
+int __fpclassify(double value);
+int __fpclassifyl(long double value);
+
+int __signbitl(long double value);
+
+unsigned __FLOAT_BITS(float value);
+unsigned long long __DOUBLE_BITS(double value);
+
 float  fminf(float value1, float value2);
 double fmin(double value1, double value2);
 
@@ -98,7 +132,18 @@ long double copysignl(long double magnitude, long double sign);
 @Defines
 NAN
 INFINITY
+FP_NAN
+FP_INFINITE
+FP_ZERO
+FP_SUBNORMAL
+FP_NORMAL
+@Types
+ldshape
 @Functions
+#define isinf(value)
+#define isnan(value)
+#define signbit(value)
+int __fpclassifyl(long double value)
 float  fminf(float value1, float value2)
 double fmin(double value1, double value2)
 float  fmaxf(float value1, float value2)
