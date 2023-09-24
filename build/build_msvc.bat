@@ -1,5 +1,12 @@
 @echo off
 
+if "%TargetArch%"=="Native" (
+	rem
+) else (
+	echo %TargetArch% is not supported with MSVC compiler!
+	EXIT
+)
+
 rem call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
 rem call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat" amd64 -no_logo
 call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat" -arch=x64 -host_arch=x64

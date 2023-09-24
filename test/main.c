@@ -22,16 +22,4 @@ int main()
 	return 0;
 }
 
-#if OS_WINDOWS
-int __stdcall WinMainCRTStartup()
-{
-	int result = main();
-	return result;
-}
-#else
-int __stdcall mainCRTStartup()
-{
-	int result = main();
-	return result;
-}
-#endif
+#include <std_startup.h>

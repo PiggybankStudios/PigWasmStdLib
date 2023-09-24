@@ -14,3 +14,11 @@ Description:
 
 #include "float.c"
 #include "math.c"
+
+#if COMPILER_GCC
+#if STD_FORMAT_DLL
+int DllMainCRTStartup() { return 0; }
+#else
+int mainCRTStartup() { return 0; }
+#endif
+#endif

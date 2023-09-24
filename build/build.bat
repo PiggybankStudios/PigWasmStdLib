@@ -11,8 +11,10 @@ set RunTest=1
 
 rem Options: MSVC, GCC, Clang
 set UseCompiler=MSVC
+rem Options: Native, Wasm
+set TargetArch=Native
 set DebugBuild=1
-set StaticLib=1
+set StaticLib=0
 
 set LibDirectory=..\lib
 set SourceDirectory=..\source
