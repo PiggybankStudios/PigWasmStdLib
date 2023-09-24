@@ -1,0 +1,48 @@
+
+# Math.h Notes
+	[ ] "https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html"
+	[ ] Outside strict ISO C mode (-ansi, -std=c90, -std=c99 or -std=c11), the functions (below) may be handled as built-in functions. All these functions have corresponding versions prefixed with __builtin_, which may be used even in strict C90 mode. 
+		- _exit     ffsl             j0f       pow10f          signbitl     strdup      ynl
+		- alloca    ffs              j0l       pow10l          signbitd32   strfmon     yn
+		- bcmp      fprintf_unlocked j0        pow10           signbitd64   strncasecmp
+		- bzero     fputs_unlocked   j1f       printf_unlocked signbitd128  strndup
+		- dcgettext gammaf           j1l       rindex          significandf strnlen
+		- dgettext  gammal           j1        roundeven       significandl toascii
+		- dremf     gamma            jnf       roundevenf      significand  y0f
+		- dreml     gammaf_r         jnl       roundevenl      sincosf      y0l
+		- drem      gammal_r         jn        scalbf          sincosl      y0
+		- exp10f    gamma_r          lgammaf_r scalbl          sincos       y1f
+		- exp10l    gettext          lgammal_r scalb           stpcpy       y1l
+		- exp10     index            lgamma_r  signbit         stpncpy      y1
+		- ffsll     isascii          mempcpy   signbitf        strcasecmp   ynf
+	[ ] The ISO C99 functions (below) are handled as built-in functions except in strict ISO C90 mode (-ansi or -std=c90).
+		- _Exit     catanhl   cpow     exp2     llrintl     remainderl
+		- acoshf    catanh    cprojf   expm1f   llrint      remainder
+		- acoshl    catanl    cprojl   expm1l   llroundf    remquof
+		- acosh     catan     cproj    expm1    llroundl    remquol
+		- asinhf    cbrtf     crealf   fdimf    llround     remquo
+		- asinhl    cbrtl     creall   fdiml    log1pf      rintf
+		- asinh     cbrt      creal    fdim     log1pl      rintl
+		- atanhf    ccosf     csinf    fmaf     log1p       rint
+		- atanhl    ccoshf    csinhf   fmal     log2f       roundf
+		- atanh     ccoshl    csinhl   fmaxf    log2l       roundl
+		- cabsf     ccosh     csinh    fmaxl    log2        round
+		- cabsl     ccosl     csinl    fmax     logbf       scalblnf
+		- cabs      ccos      csin     fma      logbl       scalblnl
+		- cacosf    cexpf     csqrtf   fminf    logb        scalbln
+		- cacoshf   cexpl     csqrtl   fminl    lrintf      scalbnf
+		- cacoshl   cexp      csqrt    fmin     lrintl      scalbnl
+		- cacosh    cimagf    ctanf    hypotf   lrint       scalbn
+		- cacosl    cimagl    ctanhf   hypotl   lroundf     snprintf
+		- cacos     cimag     ctanhl   hypot    lroundl     tgammaf
+		- cargf     clogf     ctanh    ilogbf   lround      tgammal
+		- cargl     clogl     ctanl    ilogbl   nearbyintf  tgamma
+		- carg      clog      ctan     ilogb    nearbyintl  truncf
+		- casinf    conjf     erfcf    imaxabs  nearbyint   truncl
+		- casinhf   conjl     erfcl    isblank  nextafterf  trunc
+		- casinhl   conj      erfc     iswblank nextafterl  vfscanf
+		- casinh    copysignf erff     lgammaf  nextafter   vscanf
+		- casinl    copysignl erfl     lgammal  nexttowardf vsnprintf
+		- casin     copysign  erf      lgamma   nexttowardl vsscanf
+		- catanf    cpowf     exp2f    llabs    nexttoward
+		- catanhf   cpowl     exp2l    llrintf  remainderf
