@@ -1,24 +1,29 @@
 @echo off
 
-if "%TargetArch%"=="Native" (
-	rem
-) else (
-	echo %TargetArch% is not supported with GCC compiler!
-	EXIT
-)
-
 set OutputExt=dll
 set OutputPdbName=%ProjectNameSafe%.pdb
 if "%StaticLib%"=="1" (
 	set OutputExt=lib
 	set OutputPdbName=%ProjectNameSafe%_Static.pdb
 )
+if "%TargetArch%"=="Wasm" (
+	set OutputExt=wasm
+)
 
-set CompilerFlags=-DOS_WINDOWS -DCOMPILER_GCC -DARCH_NATIVE -DPROJECT_NAME="\"%ProjectName%\"" -DPROJECT_NAME_SAFE=\"%ProjectNameSafe%\" -DDEBUG_BUILD=%DebugBuild%
-set CompilerFlags=%CompilerFlags% -nostdlib --no-standard-includes
+set CompilerFlags=-DOS_WINDOWS -DCOMPILER_CLANG -DPROJECT_NAME="\"%ProjectName%\"" -DPROJECT_NAME_SAFE=\"%ProjectNameSafe%\" -DDEBUG_BUILD=%DebugBuild%
+set CompilerFlags=%CompilerFlags% -nostdlib -nostdinc
 set CompilerFlags_Lib=-o "%ProjectNameSafe%.%OutputExt%"
 set CompilerFlags_Test=-o "%ProjectNameSafe%_Test.exe" -lPigStdLib
 set IncludeDirectories=-I"%IncludeDirectory%" -I"%SourceDirectory%" -I"%LibDirectory%\include\gylib"
+
+if "%TargetArch%"=="Native" (
+	set CompilerFlags=%CompilerFlags% -DARCH_NATIVE
+) else if "%TargetArch%"=="Wasm" (
+	set CompilerFlags=%CompilerFlags% -DARCH_WASM --target=wasm32 -mbulk-memory -Wl,--no-entry -Wl,--export-dynamic -Wl,--relocatable
+) else (
+	echo %TargetArch% is not supported with Clang compiler!
+	EXIT
+)
 
 if "%DebugBuild%"=="1" (
 	set CompilerFlags=%CompilerFlags% -g
@@ -43,21 +48,31 @@ if "%CompileLibrary%"=="1" (
 	del *.lib > NUL 2> NUL
 	del *.pdb > NUL 2> NUL
 	del *.o > NUL 2> NUL
-	del *.map > NUL 2> NUL
+	del *.ilk > NUL 2> NUL
+	del *.wasm > NUL 2> NUL
 	del %OutputDirectory%\%OutputPdbName% > NUL 2> NUL
 	del %OutputDirectory%\%ProjectNameSafe%.%OutputExt% > NUL 2> NUL
 	
-	gcc %CompilerFlags% %CompilerFlags_Lib% %IncludeDirectories% "%StdLibCodePath%"
+	clang %CompilerFlags% %CompilerFlags_Lib% %IncludeDirectories% "%StdLibCodePath%"
+	
+	if "%TargetArch%"=="Wasm" (
+		if "%ConvertToWat%"=="1" (
+			wasm2wat %ProjectNameSafe%.wasm > %ProjectNameSafe%.wat
+		)
+	)
 	
 	echo [Copying %ProjectNameSafe%.%OutputExt% to %OutputDirectory%]
 	XCOPY ".\%ProjectNameSafe%.%OutputExt%" "%OutputDirectory%\" /Y > NUL
-	if "%DebugBuild%"=="1" (
-		XCOPY ".\%OutputPdbName%" "%OutputDirectory%\" /Y > NUL
+	if "%TargetArch%"=="Native" (
+		if "%DebugBuild%"=="1" (
+			XCOPY ".\%OutputPdbName%" "%OutputDirectory%\" /Y > NUL
+		)
 	)
+	
 )
 
 if "%CompileTest%"=="1" (
 	echo[
 	
-	gcc %CompilerFlags% %CompilerFlags_Test% %IncludeDirectories% "%TestCodePath%" %LibraryDirectories%
+	clang %CompilerFlags% %CompilerFlags_Test% %IncludeDirectories% "%TestCodePath%" %LibraryDirectories%
 )

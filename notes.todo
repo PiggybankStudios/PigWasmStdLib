@@ -1,4 +1,7 @@
 
+@ Example repository for compiling to wasm with clang "https://github.com/PetterS/clang-wasm"
+@ Wasm explorer "https://mbebenita.github.io/WasmExplorer/"
+
 # Math.h Notes
 	[ ] "https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html"
 	[ ] Outside strict ISO C mode (-ansi, -std=c90, -std=c99 or -std=c11), the functions (below) may be handled as built-in functions. All these functions have corresponding versions prefixed with __builtin_, which may be used even in strict C90 mode. 

@@ -6,7 +6,7 @@ Description:
 	** Holds all the implementations for float.h declared functions
 */
 
-#if COMPILER_MSVC
+#if COMPILER_MSVC || COMPILER_CLANG
 //The MSVC compiler generates a requirement for this symbol the moment floating point numbers are used
 EXTERN_C_START
 void _fltused() { }

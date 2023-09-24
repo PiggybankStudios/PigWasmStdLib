@@ -39,7 +39,7 @@ NOTE: This file cannot depend on anything but std_common.h
 typedef float  float_t;
 typedef double double_t;
 
-#if !COMPILER_MSVC
+#if !COMPILER_MSVC && !COMPILER_CLANG
 typedef unsigned _Addr size_t;
 #endif
 typedef unsigned _Addr uintptr_t;

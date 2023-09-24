@@ -6,15 +6,16 @@ set ProjectName=Pig StdLib
 set ProjectNameSafe=PigStdLib
 
 set CompileLibrary=1
-set CompileTest=1
+set CompileTest=0
 set RunTest=1
 
 rem Options: MSVC, GCC, Clang
-set UseCompiler=MSVC
+set UseCompiler=Clang
 rem Options: Native, Wasm
-set TargetArch=Native
+set TargetArch=Wasm
 set DebugBuild=1
-set StaticLib=0
+set StaticLib=1
+set ConvertToWat=1
 
 set LibDirectory=..\lib
 set SourceDirectory=..\source
@@ -30,4 +31,6 @@ if "%UseCompiler%"=="MSVC" (
 	build_msvc.bat
 ) else if "%UseCompiler%"=="GCC" (
 	build_gcc.bat
+) else if "%UseCompiler%"=="Clang" (
+	build_clang.bat
 )

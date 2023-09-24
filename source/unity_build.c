@@ -21,4 +21,11 @@ int DllMainCRTStartup() { return 0; }
 #else
 int mainCRTStartup() { return 0; }
 #endif
+#elif COMPILER_CLANG && ARCH_NATIVE
+int main() { return 0; }
+#if STD_FORMAT_DLL
+int _DllMainCRTStartup() { return main(); }
+#else
+int mainCRTStartup() { return main(); }
+#endif
 #endif
