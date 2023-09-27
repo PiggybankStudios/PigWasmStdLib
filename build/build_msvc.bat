@@ -11,12 +11,20 @@ rem call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" 
 rem call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat" amd64 -no_logo
 call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat" -arch=x64 -host_arch=x64
 
-set OutputExt=dll
+set OutputExt=
 set OutputPdbName=%ProjectNameSafe%.pdb
-if "%StaticLib%"=="1" (
+if "%LibFormat%"=="Lib" (
 	set OutputExt=lib
 	set OutputPdbName=%ProjectNameSafe%_Static.pdb
+) else if "%LibFormat%"=="Dll" (
+	set OutputExt=dll
+) else if "%LibFormat%"=="Include" (
+	rem
+) else (
+	echo %LibFormat% is not supported with MSVC compiler!
+	EXIT
 )
+
 set TestExeName=%ProjectNameSafe%_Test.exe
 
 set CompilerFlags=/DOS_WINDOWS /DCOMPILER_MSVC /DARCH_NATIVE /DPROJECT_NAME="\"%ProjectName%\"" /DPROJECT_NAME_SAFE=\"%ProjectNameSafe%\" /DDEBUG_BUILD=%DebugBuild%
@@ -60,40 +68,40 @@ if "%DebugBuild%"=="1" (
 
 set LinkerFlags_Test=%LinkerFlags_Test% /LIBPATH:"%OutputDirectory%"
 
-if "%StaticLib%"=="1" (
+if "%LibFormat%"=="Lib" (
 	set CompilerFlags_Lib=%CompilerFlags_Lib% /DSTD_FORMAT_LIB
 	set LinkerFlags_Lib=%LinkerFlags_Lib% /OUT:"%ProjectNameSafe%.%OutputExt%"
-) else (
+) else if "%LibFormat%"=="Dll" (
 	set CompilerFlags_Lib=%CompilerFlags_Lib% /DSTD_FORMAT_DLL
 	set LinkerFlags_Lib=%LinkerFlags_Lib% /DLL /NOENTRY
+) else if "%LibFormat%"=="Include" (
+	set CompilerFlags_Test=%CompilerFlags_Test% /DINCLUDE_STD_LIBRARY /DSTD_FORMAT_INCLUDE
 )
 
 if "%CompileLibrary%"=="1" (
-	echo[
-	
-	del *.pdb > NUL 2> NUL
-	del *.dll > NUL 2> NUL
-	del *.lib > NUL 2> NUL
-	del *.obj > NUL 2> NUL
-	del *.ilk > NUL 2> NUL
-	del *.map > NUL 2> NUL
-	del %OutputDirectory%\%OutputPdbName% > NUL 2> NUL
-	del %OutputDirectory%\%ProjectNameSafe%.%OutputExt% > NUL 2> NUL
-	
-	if "%StaticLib%"=="1" (
-		cl /c /Fo"%ProjectNameSafe%.obj" %CompilerFlags% %CompilerFlags_Lib% %IncludeDirectories% "%StdLibCodePath%"
-		IF %ERRORLEVEL% NEQ 0 EXIT /B %ERRORLEVEL%
-		link /lib %ProjectNameSafe%.obj %LinkerFlags% %LinkerFlags_Lib%
-		IF %ERRORLEVEL% NEQ 0 EXIT /B %ERRORLEVEL%
+	if "%LibFormat%"=="Include" (
+		echo skipping library build
 	) else (
-		cl %CompilerFlags% %CompilerFlags_Lib% %IncludeDirectories% "%StdLibCodePath%" /link %LinkerFlags% %LinkerFlags_Lib%
-		IF %ERRORLEVEL% NEQ 0 EXIT /B %ERRORLEVEL%
-	)
-	
-	echo [Copying %ProjectNameSafe%.%OutputExt% to %OutputDirectory%]
-	XCOPY ".\%ProjectNameSafe%.%OutputExt%" "%OutputDirectory%\" /Y > NUL
-	if "%DebugBuild%"=="1" (
-		XCOPY ".\%OutputPdbName%" "%OutputDirectory%\" /Y > NUL
+		echo[
+		
+		del %OutputDirectory%\%OutputPdbName% > NUL 2> NUL
+		del %OutputDirectory%\%ProjectNameSafe%.%OutputExt% > NUL 2> NUL
+		
+		if "%LibFormat%"=="Lib" (
+			cl /c /Fo"%ProjectNameSafe%.obj" %CompilerFlags% %CompilerFlags_Lib% %IncludeDirectories% "%StdLibCodePath%"
+			IF %ERRORLEVEL% NEQ 0 EXIT /B %ERRORLEVEL%
+			link /lib %ProjectNameSafe%.obj %LinkerFlags% %LinkerFlags_Lib%
+			IF %ERRORLEVEL% NEQ 0 EXIT /B %ERRORLEVEL%
+		) else if "%LibFormat%"=="Dll" (
+			cl %CompilerFlags% %CompilerFlags_Lib% %IncludeDirectories% "%StdLibCodePath%" /link %LinkerFlags% %LinkerFlags_Lib%
+			IF %ERRORLEVEL% NEQ 0 EXIT /B %ERRORLEVEL%
+		)
+		
+		echo [Copying %ProjectNameSafe%.%OutputExt% to %OutputDirectory%]
+		XCOPY ".\%ProjectNameSafe%.%OutputExt%" "%OutputDirectory%\" /Y > NUL
+		if "%DebugBuild%"=="1" (
+			XCOPY ".\%OutputPdbName%" "%OutputDirectory%\" /Y > NUL
+		)
 	)
 )
 
