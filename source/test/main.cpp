@@ -1,5 +1,5 @@
 /*
-File:   main.c
+File:   main.cpp
 Author: Taylor Robbins
 Date:   09\23\2023
 Description: 
@@ -10,21 +10,19 @@ Description:
 #include <float.h>
 #include <math.h>
 
-// #include <float.h>
-
 // #include "gylib/gy_defines_check.h"
 
 // #define GYLIB_LOOKUP_PRIMES_10
 // #include "gylib/gy.h"
 
-int main()
+// +==============================+
+// |          Initialize          |
+// +==============================+
+WASM_EXPORTED_FUNC(void, Initialize)
 {
-	// int bigArray[4096];
-	// bigArray[0] = 10;
-	
-	int32_t testValue = 34;
-	
-	return 0;
+	TestFunction();
+	TestFunction();
+	TestFunction();
 }
 
 #ifdef TEST_INCLUDE_STD_LIBRARY

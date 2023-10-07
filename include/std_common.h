@@ -13,4 +13,6 @@ Description:
 #include "std_auto_defines.h"
 #include "std_macros.h"
 
+#include "pig_wasm_js_api.h"
+
 #endif //  _STD_COMMON_H

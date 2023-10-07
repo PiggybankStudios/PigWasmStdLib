@@ -15,3 +15,11 @@ Description:
 
 #include "float.c"
 #include "math.c"
+
+// +==============================+
+// |      InitPigWasmStdLib       |
+// +==============================+
+WASM_EXPORTED_FUNC(void, InitPigWasmStdLib, uint32_t initialMemPageCount)
+{
+	//TODO: Implement me!
+}

@@ -7,6 +7,11 @@
 				"musl_libc",
 				"lib",
 			],
+			"file_exclude_patterns": [
+				"test/combined.js",
+				"build/*.js",
+				"build/*.wasm",
+			],
 		},
 		{
 			"path": "lib/include/gylib",
@@ -28,6 +33,7 @@
 		"custom_constants":
 		[
 			"DECIMAL_DIG",
+			"EXTERN_C",
 			"EXTERN_C_END",
 			"EXTERN_C_START",
 			"FP_INFINITE",
@@ -48,9 +54,11 @@
 			"LDBL_MIN_EXP",
 			"LDBL_TRUE_MIN",
 			"TEST_INCLUDE_STD_LIBRARY",
+			"WASM_IMPORTED_FUNC",
 		],
 		"custom_functions":
 		[
+			"#define WASM_EXPORTED_FUNC(returnType, functionName, ...)",
 			"#define isinf(x)",
 			"#define isnan(x)",
 			"#define signbit(value)",
