@@ -1,11 +1,13 @@
 /*
-File:   std_language_defines.h
+File:   std_auto_defines.h
 Author: Taylor Robbins
 Date:   09\23\2023
+Description:
+	** These defines are configured automatically using compiler driven defines
 */
 
-#ifndef _STD_LANGUAGE_DEFINES_H
-#define _STD_LANGUAGE_DEFINES_H
+#ifndef _STD_AUTO_DEFINES_H
+#define _STD_AUTO_DEFINES_H
 
 // +--------------------------------------------------------------+
 // |                  LANGUAGE_C / LANGUAGE_CPP                   |
@@ -18,7 +20,7 @@ Date:   09\23\2023
 #define LANGUAGE_CPP 0
 #endif
 
-#endif //  _STD_LANGUAGE_DEFINES_H
+#endif //  _STD_AUTO_DEFINES_H
 
 // +--------------------------------------------------------------+
 // |                   Autocomplete Dictionary                    |

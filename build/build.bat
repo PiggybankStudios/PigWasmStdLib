@@ -2,65 +2,46 @@
 
 rem NOTE: We need to change this in the build_installer.nsi as well
 rem The "Safe" name doesn't have spaces or invalid characters and also doesn't change for Demo vs non-Demo
-set ProjectName=Pig StdLib
-set ProjectNameSafe=PigStdLib
+set StdLibName=PigWasm StdLib
+set StdLibNameSafe=PigWasmStdLib
 
-set CompileLibrary=1
-set CompileTest=1
-set RunTest=0
-
-rem Options: MSVC, GCC, Clang
-set UseCompiler=GCC
-rem Options: Native, Wasm
-set TargetArch=Native
-rem Options: Dll, Lib, Include
-set LibFormat=Lib
 set DebugBuild=1
-
-rem Consider optional command-line arguments
-if not "%1"=="" (
-	set UseCompiler=%1
-	rem Once any arguments are passed, local settings for what to compile are overridden
-	set CompileLibrary=1
-	set CompileTest=1
-	set RunTest=0
-)
-if not "%2"=="" (
-	set TargetArch=%2
-)
-if not "%3"=="" (
-	set LibFormat=%3
-)
-if not "%4"=="" (
-	set DebugBuild=%4
-)
-echo Compiler=%UseCompiler% Arch=%TargetArch% Format=%LibFormat% Debug=%DebugBuild%
+set ConvertToWat=1
 
 set LibDirectory=..\lib
 set SourceDirectory=..\source
 set IncludeDirectory=..\include
 set TestDirectory=..\test
-set OutputDirectory=..\lib\release
-set StdLibCodePath=%SourceDirectory%\unity_build.c
+if "%DebugBuild%"=="1" (
+	set OutputDirectory=%LibDirectory%\debug
+) else (
+	set OutputDirectory=%LibDirectory%\release
+)
+set StdMainCodePath=%SourceDirectory%\std_main.c
 set TestCodePath=%TestDirectory%\main.c
+set TestFileName=%StdLibNameSafe%_Test
 
 echo Running on %ComputerName%
 
-del *.dll > NUL 2> NUL
-del *.lib > NUL 2> NUL
-del *.pdb > NUL 2> NUL
 del *.o > NUL 2> NUL
-del *.obj > NUL 2> NUL
-del *.ilk > NUL 2> NUL
 del *.wat > NUL 2> NUL
 del *.wasm > NUL 2> NUL
 
-if "%UseCompiler%"=="MSVC" (
-	build_msvc.bat
-) else if "%UseCompiler%"=="GCC" (
-	build_gcc.bat
-) else if "%UseCompiler%"=="Clang" (
-	build_clang.bat
+set CompilerFlags=-DSTD_LIB_NAME="\"%StdLibNameName%\"" -DSTD_LIB_NAME_SAFE=\"%StdLibNameNameSafe%\" -DSTD_DEBUG_BUILD=%DebugBuild%
+set CompilerFlags=%CompilerFlags% -nostdlib -nostdinc --target=wasm32 -mbulk-memory -Wl,--no-entry -Wl,--export-dynamic -Wl,--relocatable
+set IncludeDirectories=-I"%IncludeDirectory%" -I"%SourceDirectory%" -I"%LibDirectory%\include"
+set LibraryDirectories=
+
+if "%DebugBuild%"=="1" (
+	set CompilerFlags=%CompilerFlags% -g
 ) else (
-	echo Unsupported compiler: %UseCompiler%
+	set CompilerFlags=%CompilerFlags%
+)
+
+echo[
+
+clang -o "%TestFileName%.wasm" -DTEST_INCLUDE_STD_LIBRARY %CompilerFlags% %IncludeDirectories% "%TestCodePath%" %LibraryDirectories%
+
+if "%ConvertToWat%"=="1" (
+	wasm2wat %TestFileName%.wasm > %TestFileName%.wat
 )

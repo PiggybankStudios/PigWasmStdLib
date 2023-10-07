@@ -6,27 +6,27 @@ Description:
 	** Holds some functions that help us test the standard library implementations without needing a project properly set up
 */
 
-#ifdef INCLUDE_STD_LIBRARY
-#include "unity_build.c"
-#else
+#include <stdint.h>
+#include <float.h>
 #include <math.h>
-#endif
 
 // #include <float.h>
 
-// #include "gy_defines_check.h"
+// #include "gylib/gy_defines_check.h"
 
 // #define GYLIB_LOOKUP_PRIMES_10
-// #include "gy.h"
+// #include "gylib/gy.h"
 
 int main()
 {
 	// int bigArray[4096];
 	// bigArray[0] = 10;
 	
+	int32_t testValue = 34;
+	
 	return 0;
 }
 
-#ifndef INCLUDE_STD_LIBRARY
-#include <std_startup.h>
+#ifdef TEST_INCLUDE_STD_LIBRARY
+#include "std_main.c"
 #endif

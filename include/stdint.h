@@ -10,38 +10,23 @@ NOTE: This file cannot depend on anything but std_common.h
 
 #include "std_common.h"
 
-#if ARCH_WASM
-	#define _Addr long
-	#define _Int64 long long
-	#define _Reg long
-	#define __BYTE_ORDER __LITTLE_ENDIAN
-	#define __LONG_MAX 0x7FFFFFFFFFFFFFFFL
-	#ifndef __cplusplus
-	#ifdef __WCHAR_TYPE__
-	typedef __WCHAR_TYPE__ wchar_t;
-	#else
-	typedef long wchar_t;
-	#endif
-	#endif
-#elif ARCH_NATIVE
-	#define _Addr int
-	#define _Int64 long long
-	#define _Reg long long
-	#define __BYTE_ORDER __LITTLE_ENDIAN
-	#define __LONG_MAX 0x7FFFFFFFL
-	#ifndef __cplusplus
-	typedef int wchar_t;
-	#endif
+#define _Addr long
+#define _Int64 long long
+#define _Reg long
+#define __BYTE_ORDER __LITTLE_ENDIAN
+#define __LONG_MAX 0x7FFFFFFFFFFFFFFFL
+#ifndef __cplusplus
+#ifdef __WCHAR_TYPE__
+typedef __WCHAR_TYPE__ wchar_t;
 #else
-#error Unsupported architecture in stdint.h
+typedef long wchar_t;
+#endif
 #endif
 
 typedef float  float_t;
 typedef double double_t;
 
-#if !COMPILER_MSVC && !COMPILER_CLANG
 typedef unsigned _Addr size_t;
-#endif
 typedef unsigned _Addr uintptr_t;
 typedef _Addr          ptrdiff_t;
 typedef _Addr          ssize_t;

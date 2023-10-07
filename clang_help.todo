@@ -1,9 +1,161 @@
-
 OVERVIEW: clang LLVM compiler
 
 USAGE: clang.exe [options] file...
 
-OPTIONS:
+# CL.EXE COMPATIBILITY OPTIONS:
+  /?                      Display available options
+  /arch:<value>           Set architecture for code generation
+  /Brepro-                Write current time into COFF output (default)
+  /Brepro                 Do not write current time into COFF output (breaks link.exe /incremental)
+  /clang:<arg>            Pass <arg> to the clang driver
+  /C                      Do not discard comments when preprocessing
+  /c                      Compile only
+  /d1PP                   Retain macro definitions in /E mode
+  /d1reportAllClassLayout Dump record layout information
+  /diagnostics:caret      Enable caret and column diagnostics (default)
+  /diagnostics:classic    Disable column and caret diagnostics
+  /diagnostics:column     Disable caret diagnostics but keep column info
+  /D <macro[=value]>      Define macro
+  /EH<value>              Set exception handling model
+  /EP                     Disable linemarker output and preprocess to stdout
+  /execution-charset:<value>
+                          Set runtime encoding, supports only UTF-8
+  /external:env:<var>     Add dirs in env var <var> to include search path with warnings suppressed
+  /external:I <dir>       Add directory to include search path with warnings suppressed
+  /E                      Preprocess to stdout
+  /FA                     Output assembly code file during compilation
+  /Fa<file or dir/>       Set assembly output file name (with /FA)
+  /Fe<file or dir/>       Set output executable file name
+  /FI <value>             Include file before parsing
+  /Fi<file>               Set preprocess output file name (with /P)
+  /Fo<file or dir/>       Set output object file (with /c)
+  /fp:except-             
+  /fp:except              
+  /fp:fast                
+  /fp:precise             
+  /fp:strict              
+  /Fp<file>               Set pch file name (with /Yc and /Yu)
+  /fsanitize=address      Enable AddressSanitizer
+  /GA                     Assume thread-local variables are defined in the executable
+  /Gd                     Set __cdecl as a default calling convention
+  /GF-                    Disable string pooling
+  /GF                     Enable string pooling (default)
+  /GR-                    Do not emit RTTI data
+  /Gregcall               Set __regcall as a default calling convention
+  /GR                     Emit RTTI data (default)
+  /Gr                     Set __fastcall as a default calling convention
+  /GS-                    Disable buffer security check
+  /GS                     Enable buffer security check (default)
+  /Gs                     Use stack probes (default)
+  /Gs<value>              Set stack probe size (default 4096)
+  /guard:<value>          Enable Control Flow Guard with /guard:cf, or only the table with /guard:cf,nochecks. Enable EH Continuation Guard with /guard:ehcont
+  /Gv                     Set __vectorcall as a default calling convention
+  /Gw-                    Do not put each data item in its own section (default)
+  /Gw                     Put each data item in its own section
+  /GX-                    Deprecated (like not passing /EH)
+  /GX                     Deprecated; use /EHsc
+  /Gy-                    Do not put each function in its own section (default)
+  /Gy                     Put each function in its own section
+  /Gz                     Set __stdcall as a default calling convention
+  /help                   Display available options
+  /imsvc <dir>            Add <dir> to system include search path, as if in %INCLUDE%
+  /I <dir>                Add directory to include search path
+  /J                      Make char type unsigned
+  /LDd                    Create debug DLL
+  /LD                     Create DLL
+  /link <options>         Forward options to the linker
+  /MDd                    Use DLL debug run-time
+  /MD                     Use DLL run-time
+  /MTd                    Use static debug run-time
+  /MT                     Use static run-time
+  /O1                     Optimize for size  (like /Og     /Os /Oy /Ob2 /GF /Gy)
+  /O2                     Optimize for speed (like /Og /Oi /Ot /Oy /Ob2 /GF /Gy)
+  /Ob0                    Disable function inlining
+  /Ob1                    Only inline functions explicitly or implicitly marked inline
+  /Ob2                    Inline functions as deemed beneficial by the compiler
+  /Od                     Disable optimization
+  /Og                     No effect
+  /Oi-                    Disable use of builtin functions
+  /Oi                     Enable use of builtin functions
+  /openmp-                Disable OpenMP support
+  /openmp:experimental    Enable OpenMP support with experimental SIMD support
+  /openmp                 Enable OpenMP support
+  /Os                     Optimize for size
+  /Ot                     Optimize for speed
+  /Ox                     Deprecated (like /Og /Oi /Ot /Oy /Ob2); use /O2
+  /Oy-                    Disable frame pointer omission (x86 only, default)
+  /Oy                     Enable frame pointer omission (x86 only)
+  /O<flags>               Set multiple /O flags at once; e.g. '/O2y-' for '/O2 /Oy-'
+  /o <file or dir/>       Deprecated (set output file name); use /Fe or /Fe
+  /permissive-            Disable non conforming code from compiling (default)
+  /permissive             Enable some non conforming code to compile
+  /P                      Preprocess to file
+  /QIntel-jcc-erratum     Align branches within 32-byte boundaries to mitigate the performance impact of the Intel JCC erratum.
+  /Qvec-                  Disable the loop vectorization passes
+  /Qvec                   Enable the loop vectorization passes
+  /showFilenames-         Do not print the name of each compiled file (default)
+  /showFilenames          Print the name of each compiled file
+  /showIncludes:user      Like /showIncludes but omit system headers
+  /showIncludes           Print info about included files to stderr
+  /source-charset:<value> Set source encoding, supports only UTF-8
+  /std:<value>            Set language version (c++14,c++17,c++20,c++latest,c11,c17)
+  /TC                     Treat all source files as C
+  /Tc <file>              Treat <file> as C source file
+  /TP                     Treat all source files as C++
+  /Tp <file>              Treat <file> as C++ source file
+  /tune:<value>           Set CPU for optimization without affecting instruction set
+  /utf-8                  Set source and runtime encoding to UTF-8 (default)
+  /U <macro>              Undefine macro
+  /vctoolsdir <dir>       Path to the VCToolChain
+  /vctoolsversion <value> For use with /winsysroot, defaults to newest found
+  /vd<value>              Control vtordisp placement
+  /vmb                    Use a best-case representation method for member pointers
+  /vmg                    Use a most-general representation for member pointers
+  /vmm                    Set the default most-general representation to multiple inheritance
+  /vms                    Set the default most-general representation to single inheritance
+  /vmv                    Set the default most-general representation to virtual inheritance
+  /volatile:iso           Volatile loads and stores have standard semantics
+  /volatile:ms            Volatile loads and stores have acquire and release semantics
+  /W0                     Disable all warnings
+  /W1                     Enable -Wall
+  /W2                     Enable -Wall
+  /W3                     Enable -Wall
+  /W4                     Enable -Wall and -Wextra
+  /Wall                   Enable -Weverything
+  /winsdkdir <dir>        Path to the Windows SDK
+  /winsdkversion <value>  Full version of the Windows SDK, defaults to newest found
+  /winsysroot <dir>       Same as /vctoolsdir <dir>/VC/Tools/MSVC/<vctoolsversion> /winsdkdir <dir>/Windows Kits/10
+  /WX-                    Do not treat warnings as errors (default)
+  /WX                     Treat warnings as errors
+  /w                      Disable all warnings
+  /X                      Do not add %INCLUDE% to include search path
+  /Y-                     Disable precompiled headers, overrides /Yc and /Yu
+  /Yc<filename>           Generate a pch file for all code up to and including <filename>
+  /Yu<filename>           Load a pch file and use it instead of all code up to and including <filename>
+  /Z7                     Enable CodeView debug information in object files
+  /Zc:alignedNew-         Disable C++17 aligned allocation functions
+  /Zc:alignedNew          Enable C++17 aligned allocation functions
+  /Zc:char8_t-            Disable char8_t from c++2a
+  /Zc:char8_t             Enable char8_t from C++2a
+  /Zc:dllexportInlines-   Do not dllexport/dllimport inline member functions of dllexport/import classes
+  /Zc:dllexportInlines    dllexport/dllimport inline member functions of dllexport/import classes (default)
+  /Zc:sizedDealloc-       Disable C++14 sized global deallocation functions
+  /Zc:sizedDealloc        Enable C++14 sized global deallocation functions
+  /Zc:strictStrings       Treat string literals as const
+  /Zc:threadSafeInit-     Disable thread-safe initialization of static variables
+  /Zc:threadSafeInit      Enable thread-safe initialization of static variables
+  /Zc:trigraphs-          Disable trigraphs (default)
+  /Zc:trigraphs           Enable trigraphs
+  /Zc:twoPhase-           Disable two-phase name lookup in templates (default)
+  /Zc:twoPhase            Enable two-phase name lookup in templates
+  /Zi                     Like /Z7
+  /Zl                     Do not let object file auto-link default libraries
+  /Zp                     Set default maximum struct packing alignment to 1
+  /Zp<value>              Set default maximum struct packing alignment
+  /Zs                     Syntax-check only
+#
+
+# OPTIONS:
   -###                    Print (but do not run) the commands to run for this compilation
   --amdgpu-arch-tool=<value>
                           Tool used for detecting AMD GPU arch in the system.
@@ -1277,3 +1429,4 @@ OPTIONS:
   -Xpreprocessor <arg>    Pass <arg> to the preprocessor
   -x <language>           Treat subsequent input files as having type <language>
   -z <arg>                Pass -z <arg> to the linker
+#

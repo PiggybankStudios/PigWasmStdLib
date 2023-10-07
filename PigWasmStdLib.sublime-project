@@ -27,8 +27,6 @@
 		],
 		"custom_constants":
 		[
-			"ARCH_NATIVE",
-			"ARCH_WASM",
 			"DECIMAL_DIG",
 			"EXTERN_C_END",
 			"EXTERN_C_START",
@@ -49,14 +47,7 @@
 			"LDBL_MIN_10_EXP",
 			"LDBL_MIN_EXP",
 			"LDBL_TRUE_MIN",
-			"OS_LINUX",
-			"OS_ORCA",
-			"OS_OSX",
-			"OS_PLAYDATE",
-			"OS_WINDOWS",
-			"STD_FORMAT_DLL",
-			"STD_FORMAT_INCLUDE",
-			"STD_FORMAT_LIB",
+			"TEST_INCLUDE_STD_LIBRARY",
 		],
 		"custom_functions":
 		[

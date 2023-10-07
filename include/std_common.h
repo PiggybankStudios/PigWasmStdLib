@@ -10,14 +10,7 @@ Description:
 #ifndef _STD_COMMON_H
 #define _STD_COMMON_H
 
-#include "std_os_defines.h"
-#include "std_compiler_defines.h"
-#include "std_architecture_defines.h"
-#include "std_language_defines.h"
-
+#include "std_auto_defines.h"
 #include "std_macros.h"
-
-#include "stdint.h"
-#include "float.h"
 
 #endif //  _STD_COMMON_H
