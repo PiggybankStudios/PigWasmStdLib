@@ -1,0 +1,509 @@
+OVERVIEW: clang LLVM compiler
+
+# IMPORTANT OPTIONS:
+
+#
+
+# OPTIONS:
+	-###                    Print (but do not run) the commands to run for this compilation
+	--amdgpu-arch-tool=<value>
+	                        Tool used for detecting AMD GPU arch in the system.
+	--analyzer-output <value>
+	                        Static analyzer report output format (html|plist|plist-multi-file|plist-html|sarif|sarif-html|text).
+	--analyze               Run the static analyzer
+	-arcmt-migrate-emit-errors
+	                        Emit ARC errors even if the migrator can fix them
+	-arcmt-migrate-report-output <value>
+	                        Output path for the plist report
+	-B <prefix>             Search $prefix$file for executables, libraries, and data files. If $prefix is a directory, search $prefix/$file
+	-b <arg>                Pass -b <arg> to the linker on AIX (only).
+	-CC                     Include comments from within macros in preprocessed output
+	-cl-[x]
+		-cl-denorms-are-zero    OpenCL only. Allow denormals to be flushed to zero.
+		-cl-ext=<value>         OpenCL only. Enable or disable OpenCL extensions/optional features. The argument is a comma-separated sequence of one or more extension names, each prefixed by '+' or '-'.
+		-cl-fast-relaxed-math   OpenCL only. Sets -cl-finite-math-only and -cl-unsafe-math-optimizations, and defines __FAST_RELAXED_MATH__.
+		-cl-finite-math-only    OpenCL only. Allow floating-point optimizations that assume arguments and results are not NaNs or +-Inf.
+		-cl-fp32-correctly-rounded-divide-sqrt
+		                        OpenCL only. Specify that single precision floating-point divide and sqrt used in the program source are correctly rounded.
+		-cl-kernel-arg-info     OpenCL only. Generate kernel argument metadata.
+		-cl-mad-enable          OpenCL only. Allow use of less precise MAD computations in the generated binary.
+		-cl-no-signed-zeros     OpenCL only. Allow use of less precise no signed zeros computations in the generated binary.
+		-cl-no-stdinc           OpenCL only. Disables all standard includes containing non-native compiler types and functions.
+		-cl-opt-disable         OpenCL only. This option disables all optimizations. By default optimizations are enabled.
+		-cl-single-precision-constant
+		                        OpenCL only. Treat double precision floating-point constant as single precision constant.
+		-cl-std=<value>         OpenCL language standard to compile for.
+		-cl-strict-aliasing     OpenCL only. This option is added for compatibility with OpenCL 1.0.
+		-cl-uniform-work-group-size
+		                        OpenCL only. Defines that the global work-size be a multiple of the work-group size specified to clEnqueueNDRangeKernel
+		-cl-unsafe-math-optimizations
+		                        OpenCL only. Allow unsafe floating-point optimizations.  Also implies -cl-no-signed-zeros and -cl-mad-enable.
+	--config <value>        Specifies configuration file
+	--cuda-[x]
+		--cuda-compile-host-device
+		                        Compile CUDA code for both host and device (default). Has no effect on non-CUDA compilations.
+		--cuda-device-only      Compile CUDA code for device only
+		--cuda-feature=<value>  Manually specify the CUDA feature to use
+		--cuda-host-only        Compile CUDA code for host only. Has no effect on non-CUDA compilations.
+		--cuda-include-ptx=<value>
+		                        Include PTX for the following GPU architecture (e.g. sm_35) or 'all'. May be specified more than once.
+		--cuda-noopt-device-debug
+		                        Enable device-side debug info generation. Disables ptxas optimizations.
+		--cuda-path-ignore-env  Ignore environment variables to detect CUDA installation
+		--cuda-path=<value>     CUDA installation path
+	-cuid=<value>           An ID for compilation unit, which should be the same for the same compilation unit but different for different compilation units. It is used to externalize device-side static variables for single source offloading languages CUDA and HIP so that they can be accessed by the host code of the same compilation unit.
+	-cxx-isystem <directory>
+	                        Add directory to the C++ SYSTEM include search path
+	-C                      Include comments in preprocessed output
+	-c                      Only run preprocess, compile, and assemble steps
+	-darwin-target-variant-triple <value>
+	                        Specify the darwin target variant triple
+	-darwin-target-variant <value>
+	                        Generate code for an additional runtime variant of the deployment target
+	-dD                     Print macro definitions in -E mode in addition to normal output
+	-dependency-dot <value> Filename to write DOT-formatted header dependencies to
+	-dependency-file <value>
+	                        Filename (or -) to write dependency output to
+	-dI                     Print include directives in -E mode in addition to normal output
+	-dM                     Print macro definitions in -E mode instead of normal output
+	-dsym-dir <dir>         Directory to output dSYM's (if any) to
+	-D <macro>=<value>      Define <macro> to <value> (or 1 if <value> omitted)
+	-emit-ast               Emit Clang AST files for source inputs
+	-emit-interface-stubs   Generate Interface Stub Files.
+	-emit-llvm              Use the LLVM representation for assembler and object files
+	-emit-merged-ifs        Generate Interface Stub Files, emit merged text not binary.
+	--emit-static-lib       Enable linker job to emit a static library.
+	-enable-trivial-auto-var-init-zero-knowing-it-will-be-removed-from-clang
+	                        Trivial automatic variable initialization to zero is only here for benchmarks, it'll eventually be removed, and I'm OK with that because I'm only using it to benchmark
+	--end-no-unused-arguments
+	                        Start emitting warnings for unused driver arguments
+	-extract-api            Extract API information
+	-E                      Only run the preprocessor
+	-f                      See "gcc_help_extras.txt"
+	-F <value>              Add directory to framework include search path
+	--gcc-toolchain=<value> Search for GCC installation in the specified directory on targets which commonly use GCC. The directory usually contains 'lib{,32,64}/gcc{,-cross}/$triple' and 'include'. If specified, sysroot is skipped for GCC detection. Note: executables (e.g. ld) used by the compiler are not overridden by the selected GCC installation
+	-gcodeview-ghash        Emit type record hashes in a .debug$H section
+	-gcodeview              Generate CodeView debug information
+	-gdwarf-2               Generate source-level debug information with dwarf version 2
+	-gdwarf-3               Generate source-level debug information with dwarf version 3
+	-gdwarf-4               Generate source-level debug information with dwarf version 4
+	-gdwarf-5               Generate source-level debug information with dwarf version 5
+	-gdwarf32               Enables DWARF32 format for ELF binaries, if debug information emission is enabled.
+	-gdwarf64               Enables DWARF64 format for ELF binaries, if debug information emission is enabled.
+	-gdwarf                 Generate source-level debug information with the default dwarf version
+	-gembed-source          Embed source text in DWARF debug sections
+	-gen-reproducer=<value> Emit reproducer on (option: off, crash (default), error, always)
+	-gline-directives-only  Emit debug line info directives only
+	-gline-tables-only      Emit debug line number tables only
+	-gmodules               Generate debug info with external references to clang modules or precompiled headers
+	-gno-embed-source       Restore the default behavior of not embedding source text in DWARF debug sections
+	-gno-inline-line-tables Don't emit inline line tables.
+	--gpu-bundle-output     Bundle output files of HIP device compilation
+	--gpu-instrument-lib=<value>
+	                        Instrument device library for HIP, which is a LLVM bitcode containing __cyg_profile_func_enter and __cyg_profile_func_exit
+	--gpu-max-threads-per-block=<value>
+	                        Default max threads per block for kernel launch bounds for HIP
+	-gsplit-dwarf=<value>   Set DWARF fission mode
+	-gz=<value>             DWARF debug sections compression type
+	-G <size>               Put objects of at most <size> bytes into small data section (MIPS / Hexagon)
+	-g                      Generate source-level debug information
+	--help-hidden           Display help for hidden options
+	-help                   Display available options
+	--hip-device-lib=<value>
+	                        HIP device library
+	--hip-link              Link clang-offload-bundler bundles for HIP
+	--hip-path=<value>      HIP runtime installation path, used for finding HIP version and adding HIP include path.
+	--hip-version=<value>   HIP version in the format of major.minor.patch
+	--hipspv-pass-plugin=<dsopath>
+	                        path to a pass plugin for HIP to SPIR-V passes.
+	-H                      Show header includes and nesting depth
+	-I-                     Restrict all prior -I flags to double-quoted inclusion and remove current directory from include path
+	-ibuiltininc            Enable builtin #include directories even when -nostdinc is used before or after -ibuiltininc. Using -nobuiltininc after the option disables it
+	-idirafter <value>      Add directory to AFTER include search path
+	-iframeworkwithsysroot <directory>
+	                        Add directory to SYSTEM framework search path, absolute paths are relative to -isysroot
+	-iframework <value>     Add directory to SYSTEM framework search path
+	-imacros <file>         Include macros from file before parsing
+	-include-pch <file>     Include precompiled header file
+	-include <file>         Include file before parsing
+	-index-header-map       Make the next included directory (-I or -F) an indexer header map
+	-iprefix <dir>          Set the -iwithprefix/-iwithprefixbefore prefix
+	-iquote <directory>     Add directory to QUOTE include search path
+	-isysroot <dir>         Set the system root directory (usually /)
+	-isystem-after <directory>
+	                        Add directory to end of the SYSTEM include search path
+	-isystem <directory>    Add directory to SYSTEM include search path
+	-ivfsoverlay <value>    Overlay the virtual filesystem described by file over the real file system
+	-iwithprefixbefore <dir>
+	                        Set directory to include search path with prefix
+	-iwithprefix <dir>      Set directory to SYSTEM include search path with prefix
+	-iwithsysroot <directory>
+	                        Add directory to SYSTEM include search path, absolute paths are relative to -isysroot
+	-I <dir>                Add directory to the end of the list of include search paths
+	--libomptarget-amdgcn-bc-path=<value>
+	                        Path to libomptarget-amdgcn bitcode library
+	--libomptarget-amdgpu-bc-path=<value>
+	                        Path to libomptarget-amdgcn bitcode library
+	--libomptarget-nvptx-bc-path=<value>
+	                        Path to libomptarget-nvptx bitcode library
+	-L <dir>                Add directory to library search path
+	-mabi=quadword-atomics  Enable quadword atomics ABI on AIX (AIX PPC64 only). Uses lqarx/stqcx. instructions.
+	-mabi=vec-default       Enable the default Altivec ABI on AIX (AIX only). Uses only volatile vector registers.
+	-mabi=vec-extabi        Enable the extended Altivec ABI on AIX (AIX only). Uses volatile and nonvolatile vector registers
+	-mabicalls              Enable SVR4-style position-independent code (Mips only)
+	-maix-struct-return     Return all structs in memory (PPC32 only)
+	-malign-branch-boundary=<value>
+	                        Specify the boundary's size to align branches
+	-malign-branch=<value>  Specify types of branches to align
+	-malign-double          Align doubles to two words in structs (x86 only)
+	-mamdgpu-ieee           Sets the IEEE bit in the expected default floating point  mode register. Floating point opcodes that support exception flag gathering quiet and propagate signaling NaN inputs per IEEE 754-2008. This option changes the ABI. (AMDGPU only)
+	-mbackchain             Link stack frames through backchain on System Z
+	-mbranch-protection=<value>
+	                        Enforce targets of indirect branches and function returns
+	-mbranches-within-32B-boundaries
+	                        Align selected branches (fused, jcc, jmp) within 32-byte boundary
+	-mcmodel=medany         Equivalent to -mcmodel=medium, compatible with RISC-V gcc.
+	-mcmodel=medlow         Equivalent to -mcmodel=small, compatible with RISC-V gcc.
+	-mcmse                  Allow use of CMSE (Armv8-M Security Extensions)
+	-mcode-object-v3        Legacy option to specify code object ABI V3 (AMDGPU only)
+	-mcode-object-version=<value>
+	                        Specify code object ABI version. Defaults to 4. (AMDGPU only)
+	-mcrc                   Allow use of CRC instructions (ARM/Mips only)
+	-mcumode                Specify CU wavefront execution mode (AMDGPU only)
+	-mdefault-visibility-export-mapping=<value>
+	                        Mapping between default visibility and export
+	-mdouble=<n             Force double to be <n> bits
+	-MD                     Write a depfile containing user and system headers
+	-meabi <value>          Set EABI type. Default depends on triple)
+	-membedded-data         Place constants in the .rodata section instead of the .sdata section even if they meet the -G <size> threshold (MIPS)
+	-menable-experimental-extensions
+	                        Enable use of experimental RISC-V extensions.
+	-menable-unsafe-fp-math Allow unsafe floating-point math optimizations which may decrease precision
+	-mexec-model=<value>    Execution model (WebAssembly only)
+	-mexecute-only          Disallow generation of data access to code sections (ARM only)
+	-mextern-sdata          Assume that externally defined data is in the small data if it meets the -G <size> threshold (MIPS)
+	-mfentry                Insert calls to fentry at function entry (x86/SystemZ only)
+	-mfix-cmse-cve-2021-35465
+	                        Work around VLLDM erratum CVE-2021-35465 (ARM only)
+	-mfix-cortex-a53-835769 Workaround Cortex-A53 erratum 835769 (AArch64 only)
+	-mfix-cortex-a57-aes-1742098
+	                        Work around Cortex-A57 Erratum 1742098 (ARM only)
+	-mfix-cortex-a72-aes-1655431
+	                        Work around Cortex-A72 Erratum 1655431 (ARM only)
+	-mfp32                  Use 32-bit floating point registers (MIPS only)
+	-mfp64                  Use 64-bit floating point registers (MIPS only)
+	-mframe-chain=<value>   Select the frame chain model used to emit frame records (Arm only).
+	-mfunction-return=<value>
+	                        Replace returns with jumps to ``__x86_return_thunk`` (x86 only, error otherwise)
+	-MF <file>              Write depfile output from -MMD, -MD, -MM, or -M to <file>
+	-mgeneral-regs-only     Generate code which only uses the general purpose registers (AArch64/x86 only)
+	-mglobal-merge          Enable merging of globals
+	-mgpopt                 Use GP relative accesses for symbols known to be in a small data section (MIPS)
+	-MG                     Add missing headers to depfile
+	-mharden-sls=<value>    Select straight-line speculation hardening scope (ARM/AArch64/X86 only). <arg> must be: all, none, retbr(ARM/AArch64), blr(ARM/AArch64), comdat(ARM/AArch64), nocomdat(ARM/AArch64), return(X86), indirect-jmp(X86)
+	-mhvx-ieee-fp           Enable Hexagon HVX IEEE floating-point
+	-mhvx-length=<value>    Set Hexagon Vector Length
+	-mhvx-qfloat            Enable Hexagon HVX QFloat instructions
+	-mhvx=<value>           Enable Hexagon Vector eXtensions
+	-mhvx                   Enable Hexagon Vector eXtensions
+	-miamcu                 Use Intel MCU ABI
+	-mibt-seal              Optimize fcf-protection=branch/full (requires LTO).
+	-mignore-xcoff-visibility
+	                        Not emit the visibility attribute for asm in AIX OS or give all symbols 'unspecified' visibility in XCOFF object file
+	--migrate               Run the migrator
+	-mincremental-linker-compatible
+	                        (integrated-as) Emit an object file which can be used with an incremental linker
+	-mindirect-jump=<value> Change indirect jump instructions to inhibit speculation
+	-mios-version-min=<value>
+	                        Set iOS deployment target
+	-MJ <value>             Write a compilation database entry per input
+	-mllvm <value>          Additional arguments to forward to LLVM's option processing
+	-mlocal-sdata           Extend the -G behaviour to object local data (MIPS)
+	-mlong-calls            Generate branches with extended addressability, usually via indirect jumps.
+	-mlong-double-128       Force long double to be 128 bits
+	-mlong-double-64        Force long double to be 64 bits
+	-mlong-double-80        Force long double to be 80 bits, padded to 128 bits for storage
+	-mlvi-cfi               Enable only control-flow mitigations for Load Value Injection (LVI)
+	-mlvi-hardening         Enable all mitigations for Load Value Injection (LVI)
+	-mmacos-version-min=<value>
+	                        Set macOS deployment target
+	-mmadd4                 Enable the generation of 4-operand madd.s, madd.d and related instructions.
+	-mmark-bti-property     Add .note.gnu.property with BTI to assembly files (AArch64 only)
+	-MMD                    Write a depfile containing user headers
+	-mmemops                Enable generation of memop instructions
+	-mmlir <value>          Additional arguments to forward to MLIR's option processing
+	-mms-bitfields          Set the default structure layout to be compatible with the Microsoft compiler standard
+	-mmsa                   Enable MSA ASE (MIPS only)
+	-mmt                    Enable MT ASE (MIPS only)
+	-MM                     Like -MMD, but also implies -E and writes to stdout by default
+	-mno-[x]
+		-mno-abicalls           Disable SVR4-style position-independent code (Mips only)
+		-mno-bti-at-return-twice
+		                        Do not add a BTI instruction after a setjmp or other return-twice construct (Arm/AArch64 only)
+		-mno-code-object-v3     Legacy option to specify code object ABI V2 (AMDGPU only)
+		-mno-crc                Disallow use of CRC instructions (Mips only)
+		-mno-cumode             Specify WGP wavefront execution mode (AMDGPU only)
+		-mno-embedded-data      Do not place constants in the .rodata section instead of the .sdata if they meet the -G <size> threshold (MIPS)
+		-mno-execute-only       Allow generation of data access to code sections (ARM only)
+		-mno-extern-sdata       Do not assume that externally defined data is in the small data if it meets the -G <size> threshold (MIPS)
+		-mno-fix-cmse-cve-2021-35465
+		                        Don't work around VLLDM erratum CVE-2021-35465 (ARM only)
+		-mno-fix-cortex-a53-835769
+		                        Don't workaround Cortex-A53 erratum 835769 (AArch64 only)
+		-mno-fix-cortex-a57-aes-1742098
+		                        Don't work around Cortex-A57 Erratum 1742098 (ARM only)
+		-mno-fix-cortex-a72-aes-1655431
+		                        Don't work around Cortex-A72 Erratum 1655431 (ARM only)
+		-mno-global-merge       Disable merging of globals
+		-mno-gpopt              Do not use GP relative accesses for symbols known to be in a small data section (MIPS)
+		-mno-hvx-ieee-fp        Disable Hexagon HVX IEEE floating-point
+		-mno-hvx-qfloat         Disable Hexagon HVX QFloat instructions
+		-mno-hvx                Disable Hexagon Vector eXtensions
+		-mno-implicit-float     Don't generate implicit floating point instructions
+		-mno-incremental-linker-compatible
+		                        (integrated-as) Emit an object file which cannot be used with an incremental linker
+		-mno-local-sdata        Do not extend the -G behaviour to object local data (MIPS)
+		-mno-long-calls         Restore the default behaviour of not generating long calls
+		-mno-lvi-cfi            Disable control-flow mitigations for Load Value Injection (LVI)
+		-mno-lvi-hardening      Disable mitigations for Load Value Injection (LVI)
+		-mno-madd4              Disable the generation of 4-operand madd.s, madd.d and related instructions.
+		-mno-memops             Disable generation of memop instructions
+		-mno-movt               Disallow use of movt/movw pairs (ARM only)
+		-mno-ms-bitfields       Do not set the default structure layout to be compatible with the Microsoft compiler standard
+		-mno-msa                Disable MSA ASE (MIPS only)
+		-mno-mt                 Disable MT ASE (MIPS only)
+		-mno-neg-immediates     Disallow converting instructions with negative immediates to their negation or inversion.
+		-mno-nvj                Disable generation of new-value jumps
+		-mno-nvs                Disable generation of new-value stores
+		-mno-outline-atomics    Don't generate local calls to out-of-line atomic operations
+		-mno-outline            Disable function outlining (AArch64 only)
+		-mno-packets            Disable generation of instruction packets
+		-mno-relax              Disable linker relaxation
+		-mno-restrict-it        Allow generation of complex IT blocks.
+		-mno-save-restore       Disable using library calls for save and restore
+		-mno-seses              Disable speculative execution side effect suppression (SESES)
+		-mno-stack-arg-probe    Disable stack probes which are enabled by default
+		-mno-tgsplit            Disable threadgroup split execution mode (AMDGPU only)
+		-mno-tls-direct-seg-refs
+		                        Disable direct TLS access through segment registers
+		-mno-unaligned-access   Force all memory accesses to be aligned (AArch32/AArch64 only)
+		-mno-wavefrontsize64    Specify wavefront size 32 mode (AMDGPU only)
+		-mnocrc                 Disallow use of CRC instructions (ARM only)
+		-mnop-mcount            Generate mcount/__fentry__ calls as nops. To activate they need to be patched in.
+	-mnvj                   Enable generation of new-value jumps
+	-mnvs                   Enable generation of new-value stores
+	-module-dependency-dir <value>
+	                        Directory to dump module dependencies to
+	-module-file-info       Provide information about a particular module file
+	-momit-leaf-frame-pointer
+	                        Omit frame pointer setup for leaf functions
+	-moutline-atomics       Generate local calls to out-of-line atomic operations
+	-moutline               Enable function outlining (AArch64 only)
+	-mpacked-stack          Use packed stack layout (SystemZ only).
+	-mpackets               Enable generation of instruction packets
+	-mpad-max-prefix-size=<value>
+	                        Specify maximum number of prefixes to use for padding
+	-mprefer-vector-width=<value>
+	                        Specifies preferred vector width for auto-vectorization. Defaults to 'none' which allows target specific decisions.
+	-MP                     Create phony target for each dependency (other than main file)
+	-mqdsp6-compat          Enable hexagon-qdsp6 backward compatibility
+	-MQ <value>             Specify name of main file output to quote in depfile
+	-mrecord-mcount         Generate a __mcount_loc section entry for each __fentry__ call.
+	-mrelax-all             (integrated-as) Relax all machine instructions
+	-mrelax                 Enable linker relaxation
+	-mrestrict-it           Disallow generation of complex IT blocks.
+	-mrtd                   Make StdCall calling convention the default
+	-msave-restore          Enable using library calls for save and restore
+	-mseses                 Enable speculative execution side effect suppression (SESES). Includes LVI control flow integrity mitigations
+	-msign-return-address=<value>
+	                        Select return address signing scope
+	-mskip-rax-setup        Skip setting up RAX register when passing variable arguments (x86 only)
+	-msmall-data-limit=<value>
+	                        Put global and static data smaller than the limit into a special section
+	-msoft-float            Use software floating point
+	-mstack-alignment=<value>
+	                        Set the stack alignment
+	-mstack-arg-probe       Enable stack probes
+	-mstack-probe-size=<value>
+	                        Set the stack probe size
+	-mstack-protector-guard-offset=<value>
+	                        Use the given offset for addressing the stack-protector guard
+	-mstack-protector-guard-reg=<value>
+	                        Use the given reg for addressing the stack-protector guard
+	-mstack-protector-guard-symbol=<value>
+	                        Use the given symbol for addressing the stack-protector guard
+	-mstack-protector-guard=<value>
+	                        Use the given guard (global, tls) for addressing the stack-protector guard
+	-mstackrealign          Force realign the stack at entry to every function
+	-msve-vector-bits=<value>
+	                        Specify the size in bits of an SVE vector register. Defaults to the vector length agnostic value of "scalable". (AArch64 only)
+	-msvr4-struct-return    Return small structs in registers (PPC32 only)
+	-mtargetos=<value>      Set the deployment target to be the specified OS and OS version
+	-mtgsplit               Enable threadgroup split execution mode (AMDGPU only)
+	-mthread-model <value>  The thread model to use. Defaults to 'posix')
+	-mtls-direct-seg-refs   Enable direct TLS access through segment registers (default)
+	-mtls-size=<value>      Specify bit size of immediate TLS offsets (AArch64 ELF only): 12 (for 4KB) | 24 (for 16MB, default) | 32 (for 4GB) | 48 (for 256TB, needs -mcmodel=large)
+	-mtp=<value>            Thread pointer access method (AArch32/AArch64 only)
+	-mtune=<value>          Only supported on X86, RISC-V and SystemZ. Otherwise accepted for compatibility with GCC.
+	-MT <value>             Specify name of main file output in depfile
+	-munaligned-access      Allow memory accesses to be unaligned (AArch32/AArch64 only)
+	-munsafe-fp-atomics     Enable unsafe floating point atomic instructions (AMDGPU only)
+	-mvscale-max=<value>    Specify the vscale maximum. Defaults to the vector length agnostic value of "0". (AArch64 only)
+	-mvscale-min=<value>    Specify the vscale minimum. Defaults to "1". (AArch64 only)
+	-MV                     Use NMake/Jom format for the depfile
+	-mwavefrontsize64       Specify wavefront size 64 mode (AMDGPU only)
+	-M                      Like -MD, but also implies -E and writes to stdout by default
+	--no-cuda-include-ptx=<value>
+	                        Do not include PTX for the following GPU architecture (e.g. sm_35) or 'all'. May be specified more than once.
+	--no-cuda-version-check Don't error out if the detected version of the CUDA install is too low for the requested CUDA gpu architecture.
+	--no-gpu-bundle-output  Do not bundle output files of HIP device compilation
+	-no-hip-rt              Do not link against HIP runtime libraries
+	--no-offload-arch=<value>
+	                        Remove CUDA/HIP offloading device architecture (e.g. sm_35, gfx906) from the list of devices to compile for. 'all' resets the list to its default value.
+	--no-offload-new-driver Don't Use the new driver for offloading compilation.
+	--no-system-header-prefix=<prefix>
+	                        Treat all #include paths starting with <prefix> as not including a system header.
+	-nobuiltininc           Disable builtin #include directories
+	-nogpuinc               Do not add include paths for CUDA/HIP and do not include the default CUDA/HIP wrapper headers
+	-nogpulib               Do not link device library for CUDA/HIP device compilation
+	-nohipwrapperinc        Do not include the default HIP wrapper headers and include paths
+	-nostdinc++             Disable standard #include directories for the C++ standard library
+	-ObjC++                 Treat source input files as Objective-C++ inputs
+	-objcmt-allowlist-dir-path=<value>
+	                        Only modify files with a filename contained in the provided directory path
+	-objcmt-atomic-property Make migration to 'atomic' properties
+	-objcmt-migrate-all     Enable migration to modern ObjC
+	-objcmt-migrate-annotation
+	                        Enable migration to property and method annotations
+	-objcmt-migrate-designated-init
+	                        Enable migration to infer NS_DESIGNATED_INITIALIZER for initializer methods
+	-objcmt-migrate-instancetype
+	                        Enable migration to infer instancetype for method result type
+	-objcmt-migrate-literals
+	                        Enable migration to modern ObjC literals
+	-objcmt-migrate-ns-macros
+	                        Enable migration to NS_ENUM/NS_OPTIONS macros
+	-objcmt-migrate-property-dot-syntax
+	                        Enable migration of setter/getter messages to property-dot syntax
+	-objcmt-migrate-property
+	                        Enable migration to modern ObjC property
+	-objcmt-migrate-protocol-conformance
+	                        Enable migration to add protocol conformance on classes
+	-objcmt-migrate-readonly-property
+	                        Enable migration to modern ObjC readonly property
+	-objcmt-migrate-readwrite-property
+	                        Enable migration to modern ObjC readwrite property
+	-objcmt-migrate-subscripting
+	                        Enable migration to modern ObjC subscripting
+	-objcmt-ns-nonatomic-iosonly
+	                        Enable migration to use NS_NONATOMIC_IOSONLY macro for setting property's 'atomic' attribute
+	-objcmt-returns-innerpointer-property
+	                        Enable migration to annotate property with NS_RETURNS_INNER_POINTER
+	-objcmt-whitelist-dir-path=<value>
+	                        Alias for -objcmt-allowlist-dir-path
+	-ObjC                   Treat source input files as Objective-C inputs
+	-object-file-name=<file>
+	                        Set the output <file> for debug infos
+	--offload-arch=<value>  CUDA offloading device architecture (e.g. sm_35), or HIP offloading target ID in the form of a device architecture followed by target ID features delimited by a colon. Each target ID feature is a pre-defined string followed by a plus or minus sign (e.g. gfx908:xnack+:sramecc-).  May be specified more than once.
+	--offload-device-only   Only compile for the offloading device.
+	--offload-host-device   Only compile for the offloading host.
+	--offload-host-only     Only compile for the offloading host.
+	--offload-link          Use the new offloading linker to perform the link job.
+	--offload-new-driver    Use the new driver for offloading compilation.
+	--offload=<value>       Specify comma-separated list of offloading target triples (CUDA and HIP only)
+	-o <file>               Write output to <file>
+	-pedantic               Warn on language extensions
+	-pg                     Enable mcount instrumentation
+	-pipe                   Use pipes between commands, when possible
+	--precompile            Only precompile the input
+	-print-diagnostic-options
+	                        Print all of Clang's warning options
+	-print-effective-triple Print the effective target triple
+	-print-file-name=<file> Print the full library path of <file>
+	-print-ivar-layout      Enable Objective-C Ivar layout bitmap print trace
+	-print-libgcc-file-name Print the library path for the currently used compiler runtime library ("libgcc.a" or "libclang_rt.builtins.*.a")
+	-print-multiarch        Print the multiarch target triple
+	-print-prog-name=<name> Print the full program path of <name>
+	-print-resource-dir     Print the resource directory pathname
+	-print-rocm-search-dirs Print the paths used for finding ROCm installation
+	-print-runtime-dir      Print the directory pathname containing clangs runtime libraries
+	-print-search-dirs      Print the paths used for finding libraries and programs
+	-print-supported-cpus   Print supported cpu models for the given target (if target is not specified, it will print the supported cpus for the default target)
+	-print-target-triple    Print the normalized target triple
+	-print-targets          Print the registered targets
+	-pthread                Support POSIX threads in generated code
+	--ptxas-path=<value>    Path to ptxas (used for compiling CUDA code)
+	-P                      Disable linemarker output in -E mode
+	-Qn                     Do not emit metadata containing compiler name and version
+	-Qunused-arguments      Don't emit warning for unused driver arguments
+	-Qy                     Emit metadata containing compiler name and version
+	-relocatable-pch        Whether to build a relocatable precompiled header
+	-rewrite-legacy-objc    Rewrite Legacy Objective-C source to C++
+	-rewrite-objc           Rewrite Objective-C source to C++
+	--rocm-device-lib-path=<value>
+	                        ROCm device library path. Alternative to rocm-path.
+	--rocm-path=<value>     ROCm installation path, used for finding and automatically linking required bitcode libraries.
+	-Rpass-analysis=<value> Report transformation analysis from optimization passes whose name matches the given POSIX regular expression
+	-Rpass-missed=<value>   Report missed transformations by optimization passes whose name matches the given POSIX regular expression
+	-Rpass=<value>          Report transformations performed by optimization passes whose name matches the given POSIX regular expression
+	-rtlib=<value>          Compiler runtime library to use
+	-R<remark>              Enable the specified remark
+	-save-stats=<value>     Save llvm statistics.
+	-save-stats             Save llvm statistics.
+	-save-temps=<value>     Save intermediate compilation results.
+	-save-temps             Save intermediate compilation results
+	-serialize-diagnostics <value>
+	                        Serialize compiler diagnostics to a file
+	-shared-libsan          Dynamically link the sanitizer runtime
+	--start-no-unused-arguments
+	                        Don't emit warnings about unused arguments for the following arguments
+	-static-libsan          Statically link the sanitizer runtime
+	-static-openmp          Use the static host OpenMP runtime while linking.
+	-std=<value>            Language standard to compile for
+	-stdlib++-isystem <directory>
+	                        Use directory as the C++ standard library include path
+	-stdlib=<value>         C++ standard library to use
+	-sycl-std=<value>       SYCL language standard to compile for.
+	--system-header-prefix=<prefix>
+	                        Treat all #include paths starting with <prefix> as including a system header.
+	-S                      Only run preprocess and compilation steps
+	--target=<value>        Generate code for the given target
+	-Tbss <addr>            Set starting address of BSS to <addr>
+	-Tdata <addr>           Set starting address of DATA to <addr>
+	-time                   Time individual commands
+	-traditional-cpp        Enable some traditional CPP emulation
+	-trigraphs              Process trigraph sequences
+	-Ttext <addr>           Set starting address of TEXT to <addr>
+	-T <script>             Specify <script> as linker script
+	-undef                  undef all system defines
+	-unwindlib=<value>      Unwind library to use
+	-U <macro>              Undefine macro <macro>
+	--verify-debug-info     Verify the binary representation of debug output
+	-verify-pch             Load and verify that a pre-compiled header file is not stale
+	--version               Print version information
+	-v                      Show commands to run and use verbose output
+	-Wa,<arg>               Pass the comma separated arguments in <arg> to the assembler
+	-Wdeprecated            Enable warnings for deprecated constructs and define __DEPRECATED
+	-Wl,<arg>               Pass the comma separated arguments in <arg> to the linker
+	-working-directory <value>
+	                        Resolve file paths relative to the specified directory
+	-Wp,<arg>               Pass the comma separated arguments in <arg> to the preprocessor
+	-W<warning>             Enable the specified warning
+	-w                      Suppress all warnings
+	-Xanalyzer <arg>        Pass <arg> to the static analyzer
+	-Xarch_device <arg>     Pass <arg> to the CUDA/HIP device compilation
+	-Xarch_host <arg>       Pass <arg> to the CUDA/HIP host compilation
+	-Xassembler <arg>       Pass <arg> to the assembler
+	-Xclang <arg>           Pass <arg> to the clang compiler
+	-Xcuda-fatbinary <arg>  Pass <arg> to fatbinary invocation
+	-Xcuda-ptxas <arg>      Pass <arg> to the ptxas assembler
+	-Xlinker <arg>          Pass <arg> to the linker
+	-Xoffload-linker<triple> <arg>
+	                        Pass <arg> to the offload linkers or the ones idenfied by -<triple>
+	-Xopenmp-target=<triple> <arg>
+	                        Pass <arg> to the target offloading toolchain identified by <triple>.
+	-Xopenmp-target <arg>   Pass <arg> to the target offloading toolchain.
+	-Xpreprocessor <arg>    Pass <arg> to the preprocessor
+	-x <language>           Treat subsequent input files as having type <language>
+	-z <arg>                Pass -z <arg> to the linker
+#

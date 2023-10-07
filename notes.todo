@@ -1,6 +1,10 @@
 
+
+
 @ Example repository for compiling to wasm with clang "https://github.com/PetterS/clang-wasm"
 @ Wasm explorer "https://mbebenita.github.io/WasmExplorer/"
+
+- "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.37.32822\include\vcruntime.h"
 
 # Math.h Notes
 	[ ] "https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html"
@@ -85,3 +89,4 @@
 		- fprintf labs     snprintf tan
 		- fputs   ldexp    sprintf  vfprintf
 		- free    log10    sqrt     vprintf
+#

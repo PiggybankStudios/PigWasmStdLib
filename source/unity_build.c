@@ -8,6 +8,8 @@ Description:
 
 #include "std_format_defines.h"
 
+#include "std_platform_headers.h"
+
 #include "stdint.h"
 #include "float.h"
 #include "math.h"

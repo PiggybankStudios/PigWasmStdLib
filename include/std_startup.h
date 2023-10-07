@@ -23,6 +23,8 @@ int mainCRTStartup()
 {
 	return main();
 }
+#elif COMPILER_CLANG
+//TODO: Anything needed here?
 #else
 #error Unsupported compiler in std_startup.c
 #endif

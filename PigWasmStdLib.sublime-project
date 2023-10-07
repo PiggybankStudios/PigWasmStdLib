@@ -55,6 +55,7 @@
 			"OS_PLAYDATE",
 			"OS_WINDOWS",
 			"STD_FORMAT_DLL",
+			"STD_FORMAT_INCLUDE",
 			"STD_FORMAT_LIB",
 		],
 		"custom_functions":
