@@ -20,6 +20,10 @@ Date:   09\23\2023
 #define WASM_IMPORTED_FUNC EXTERN_C
 #define WASM_EXPORTED_FUNC(returnType, functionName, ...) EXTERN_C returnType __attribute__((export_name(#functionName))) functionName(__VA_ARGS__)
 
+#if LANGUAGE_C
+#define nullptr ((void*)0)
+#endif
+
 #endif //  _STD_MACROS_H
 
 // +--------------------------------------------------------------+

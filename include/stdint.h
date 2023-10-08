@@ -15,7 +15,7 @@ NOTE: This file cannot depend on anything but std_common.h
 #define _Reg long
 #define __BYTE_ORDER __LITTLE_ENDIAN
 #define __LONG_MAX 0x7FFFFFFFFFFFFFFFL
-#ifndef __cplusplus
+#if LANGUAGE_C
 #ifdef __WCHAR_TYPE__
 typedef __WCHAR_TYPE__ wchar_t;
 #else
@@ -75,3 +75,35 @@ typedef unsigned _Int64 uintmax_t;
 // typedef unsigned useconds_t;
 
 #endif //  _STDINT_H
+
+// +--------------------------------------------------------------+
+// |                   Autocomplete Dictionary                    |
+// +--------------------------------------------------------------+
+/*
+@Defines
+_Addr
+_Int64
+_Reg
+__BYTE_ORDER
+__LONG_MAX
+@Types
+wchar_t
+float_t
+double_t
+size_t
+uintptr_t
+ptrdiff_t
+ssize_t
+intptr_t
+int8_t
+int16_t
+int32_t
+int64_t
+intmax_t
+uint8_t
+uint16_t
+uint32_t
+uint64_t
+u_int64_t
+uintmax_t
+*/

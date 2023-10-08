@@ -11,6 +11,8 @@ Description:
 #define _STD_COMMON_H
 
 #include "std_auto_defines.h"
+#include "std_options.h"
+#include "std_constants.h"
 #include "std_macros.h"
 
 #include "pig_wasm_js_api.h"

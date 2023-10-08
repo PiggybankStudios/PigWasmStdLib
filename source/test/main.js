@@ -13,7 +13,14 @@ async function MainLoop()
 	canvas = PigWasm_AcquireCanvas(800, 600);
 	glContext = PigWasm_CreateGlContext(canvas);
 	console.log("Calling init...");
-	wasmModule = await PigWasm_Init("PigWasmStdLib_Test.wasm", 64);
+	initialWasmPageCount = 64;
+	wasmMemory = PigWasm_InitMemory(initialWasmPageCount);
+	wasmModule = await PigWasm_Init(wasmMemory, initialWasmPageCount, "PigWasmStdLib_Test.wasm");
+	
+	globalCanvas = canvas;
+	globalGlContext = glContext;
+	globalWasmMemory = wasmMemory;
+	globalWasmModule = wasmModule;
 	
 	console.log("Getting time...");
 	let initializeTimestamp = Math.floor(Date.now() / 1000); //TODO: Should we be worried about this being a 32-bit float?

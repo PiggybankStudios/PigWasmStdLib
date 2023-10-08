@@ -11,15 +11,20 @@ Description:
 
 #include "stdint.h"
 #include "float.h"
+#include "assert.h"
 #include "math.h"
+#include "stdlib.h"
 
-#include "float.c"
+#include "std_wasm_memory.c"
+
+#include "assert.c"
+#include "stdlib.c"
 #include "math.c"
 
 // +==============================+
 // |      InitPigWasmStdLib       |
 // +==============================+
-WASM_EXPORTED_FUNC(void, InitPigWasmStdLib, uint32_t initialMemPageCount)
+WASM_EXPORTED_FUNC(void, InitStdLib, uint32_t initialMemPageCount)
 {
-	//TODO: Implement me!
+	InitWasmMemory(initialMemPageCount);
 }

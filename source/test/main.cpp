@@ -6,9 +6,11 @@ Description:
 	** Holds some functions that help us test the standard library implementations without needing a project properly set up
 */
 
+#include <stdlib.h>
 #include <stdint.h>
 #include <float.h>
 #include <math.h>
+#include <assert.h>
 
 // #include "gylib/gy_defines_check.h"
 
@@ -20,9 +22,16 @@ Description:
 // +==============================+
 WASM_EXPORTED_FUNC(void, Initialize)
 {
-	TestFunction();
-	TestFunction();
-	TestFunction();
+	// float testFloat = 1.02f;
+	// if (isnan(testFloat)) { jsPrintString("It's NaN!"); }
+	// if (isinf(testFloat)) { jsPrintString("It's Inifite!"); }
+	// if (isnormal(testFloat)) { jsPrintString("It's normal!"); }
+	
+	float largeFloat1 = 1.0123131414123123;
+	float largeFloat2 = 2.1023131414123123;
+	// jsPrintNumber("sizeof(long double)", sizeof(long double));
+	jsPrintFloat("fmaxf", fmaxf(largeFloat1, largeFloat2));
+	// if (isnan(largeFloat)) { jsPrintString("It's NaN!"); }
 }
 
 #ifdef TEST_INCLUDE_STD_LIBRARY

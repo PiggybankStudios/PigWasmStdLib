@@ -35,8 +35,7 @@ del *.wasm > NUL 2> NUL
 del *.js > NUL 2> NUL
 del *.o > NUL 2> NUL
 
-set CompilerFlags=-DSTD_LIB_NAME="\"%StdLibNameName%\"" -DSTD_LIB_NAME_SAFE=\"%StdLibNameNameSafe%\" -DSTD_DEBUG_BUILD=%DebugBuild%
-set CompilerFlags=%CompilerFlags% -nostdlib -nostdinc --target=wasm32 -mbulk-memory
+set CompilerFlags=-nostdlib -nostdinc --target=wasm32 -mbulk-memory
 set IncludeDirectories=-I"%IncludeDirectory%" -I"%SourceDirectory%" -I"%LibDirectory%\include"
 rem --no-entry        = ?
 rem --allow-undefined = ?
@@ -45,9 +44,9 @@ rem --lto-O2          = ?
 set LinkerFlags=--no-entry --allow-undefined --import-memory --lto-O2
 
 if "%DebugBuild%"=="1" (
-	set CompilerFlags=%CompilerFlags% -g
+	set CompilerFlags=%CompilerFlags% -g -DSTD_ASSERTIONS_ENABLED
 ) else (
-	set CompilerFlags=%CompilerFlags%
+	set CompilerFlags=%CompilerFlags% -DSTD_ASSERTIONS_DISABLED
 )
 
 rem +--------------------------------------------------------------+
@@ -55,6 +54,8 @@ rem |                       Test Compilation                       |
 rem +--------------------------------------------------------------+
 
 echo[
+
+clang "%TestCodePath%" -c %CompilerFlags% %IncludeDirectories% -o "%TestFileName%_Defines.txt" -dM -E
 
 echo [Compiling...]
 clang "%StdMainCodePath%" -c %CompilerFlags% %IncludeDirectories% -o "%StdLibNameSafe%.o"

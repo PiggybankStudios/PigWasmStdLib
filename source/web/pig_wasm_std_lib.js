@@ -12,16 +12,12 @@ Description:
 */
 
 // +--------------------------------------------------------------+
-// |                        API Functions                         |
+// |                           Globals                            |
 // +--------------------------------------------------------------+
-function TestFunction()
-{
-	console.log("TestFunction was called!");
-}
-
-apiFuncs = {
-	TestFunction: TestFunction,
-};
+var globalCanvas = null;
+var globalGlContext = null;
+var globalWasmMemory = null;
+var globalWasmModule = null;
 
 // +--------------------------------------------------------------+
 // |                       Helper Functions                       |
@@ -46,6 +42,83 @@ async function loadWasmModule(filePath, environment)
 	}
 	return result;
 }
+
+function wasmPntrToJsString(memory, ptr)
+{
+	const codes = [];
+	const buf = new Uint8Array(memory.buffer);
+	
+	let cIndex = 0;
+	while (true)
+	{
+		const char = buf[ptr + cIndex];
+		if (!char) { break; }
+		codes.push(char);
+		cIndex++;
+	}
+	
+	//TODO: Can we do something else? If we do our own UTF-8 parsing maybe?
+	return String.fromCharCode(...codes);
+}
+
+// +--------------------------------------------------------------+
+// |                        API Functions                         |
+// +--------------------------------------------------------------+
+function jsAbort(messageStrPntr)
+{
+	let messageStr = wasmPntrToJsString(globalWasmMemory, messageStrPntr);
+	console.error("Abort:", messageStr);
+	throw new Error(messageStr);
+}
+
+function jsAssertFailure(filePathPntr, fileLineNum, funcNamePntr, messageStrPntr)
+{
+	let filePath = wasmPntrToJsString(globalWasmMemory, filePathPntr);
+	let funcName = wasmPntrToJsString(globalWasmMemory, funcNamePntr);
+	let messageStr = wasmPntrToJsString(globalWasmMemory, messageStrPntr);
+	let outputMessage = "Assertion failed! (" + messageStr + ") is not true! In " + filePath + ":" + fileLineNum + " " + funcName + "(...)";
+	console.error(outputMessage);
+	throw new Error(outputMessage);
+}
+
+function jsGrowMemory(numPages)
+{
+	// console.log("Memory growing by " + numPages + " pages");
+	globalWasmMemory.grow(numPages);
+}
+
+function jsTestFunction()
+{
+	console.log("TestFunction was called!");
+}
+
+function jsPrintNumber(labelStrPntr, number)
+{
+	let labelStr = wasmPntrToJsString(globalWasmMemory, labelStrPntr);
+	console.log(labelStr + ": " + number + " (0x" + number.toString(16) + ")");
+}
+
+function jsPrintFloat(labelStrPntr, number)
+{
+	let labelStr = wasmPntrToJsString(globalWasmMemory, labelStrPntr);
+	console.log(labelStr + ": " + number);
+}
+
+function jsPrintString(strPntr)
+{
+	let str = wasmPntrToJsString(globalWasmMemory, strPntr);
+	console.log("String:", str);
+}
+
+apiFuncs = {
+	jsAbort: jsAbort,
+	jsAssertFailure: jsAssertFailure,
+	jsGrowMemory: jsGrowMemory,
+	jsTestFunction: jsTestFunction,
+	jsPrintNumber: jsPrintNumber,
+	jsPrintFloat: jsPrintFloat,
+	jsPrintString: jsPrintString,
+};
 
 // +--------------------------------------------------------------+
 // |                        Main Functions                        |
@@ -77,9 +150,14 @@ function PigWasm_CreateGlContext(canvas)
 	return canvasContextGl;
 }
 
-async function PigWasm_Init(wasmFilePath, initialMemPageCount)
+function PigWasm_InitMemory(initialMemPageCount)
 {
 	wasmMemory = new WebAssembly.Memory({ initial: initialMemPageCount });
+	return wasmMemory
+}
+
+async function PigWasm_Init(wasmMemory, initialMemPageCount, wasmFilePath)
+{
 	let wasmEnvironment =
 	{
 		memory: wasmMemory,
@@ -91,7 +169,7 @@ async function PigWasm_Init(wasmFilePath, initialMemPageCount)
 	console.log("After loading wasm module we now have " + wasmMemory.buffer.byteLength);
 	console.log("WasmModule:", wasmModule);
 	
-	wasmModule.exports.InitPigWasmStdLib(initialMemPageCount);
+	wasmModule.exports.InitStdLib(initialMemPageCount);
 	
 	return wasmModule;
 }
