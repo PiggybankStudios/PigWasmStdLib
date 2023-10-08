@@ -9,10 +9,10 @@ Description:
 
 async function MainLoop()
 {
-	console.log("MainLoop start...");
+	// console.log("MainLoop start...");
 	canvas = PigWasm_AcquireCanvas(800, 600);
 	glContext = PigWasm_CreateGlContext(canvas);
-	console.log("Calling init...");
+	// console.log("Calling init...");
 	initialWasmPageCount = 64;
 	wasmMemory = PigWasm_InitMemory(initialWasmPageCount);
 	wasmModule = await PigWasm_Init(wasmMemory, initialWasmPageCount, "PigWasmStdLib_Test.wasm");
@@ -22,9 +22,9 @@ async function MainLoop()
 	globalWasmMemory = wasmMemory;
 	globalWasmModule = wasmModule;
 	
-	console.log("Getting time...");
+	// console.log("Getting time...");
 	let initializeTimestamp = Math.floor(Date.now() / 1000); //TODO: Should we be worried about this being a 32-bit float?
-	console.log("Calling Initialize...");
+	// console.log("Calling Initialize...");
 	wasmModule.exports.Initialize(initializeTimestamp);
 	
 	// window.addEventListener("mousemove", function(event)
@@ -63,7 +63,7 @@ async function MainLoop()
 	// 	window.requestAnimationFrame(renderFrame);
 	// }
 	// window.requestAnimationFrame(renderFrame);
-	console.log("MainLoop Done!");
+	// console.log("MainLoop Done!");
 }
 
 MainLoop();

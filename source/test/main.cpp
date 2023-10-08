@@ -27,10 +27,9 @@ WASM_EXPORTED_FUNC(void, Initialize)
 	// if (isinf(testFloat)) { jsPrintString("It's Inifite!"); }
 	// if (isnormal(testFloat)) { jsPrintString("It's normal!"); }
 	
-	float largeFloat1 = 1.0123131414123123;
-	float largeFloat2 = 2.1023131414123123;
+	double largeFloat1 = -13.0123131414123123;
 	// jsPrintNumber("sizeof(long double)", sizeof(long double));
-	jsPrintFloat("fmaxf", fmaxf(largeFloat1, largeFloat2));
+	jsPrintFloat("fmod", fmod(largeFloat1, 1.0f));
 	// if (isnan(largeFloat)) { jsPrintString("It's NaN!"); }
 }
 

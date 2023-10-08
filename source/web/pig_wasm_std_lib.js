@@ -24,7 +24,7 @@ var globalWasmModule = null;
 // +--------------------------------------------------------------+
 async function loadWasmModule(filePath, environment)
 {
-	console.log("Loading " + filePath + "...");
+	// console.log("Loading " + filePath + "...");
 	let result = null;
 	try
 	{
@@ -34,7 +34,7 @@ async function loadWasmModule(filePath, environment)
 			{ env: environment }
 		);
 		result = wasmModule.instance;
-		console.log("Loaded module exports:", result.exports);
+		// console.log("Loaded module exports:", result.exports);
 	}
 	catch (exception)
 	{
@@ -164,10 +164,10 @@ async function PigWasm_Init(wasmMemory, initialMemPageCount, wasmFilePath)
 		...apiFuncs,
 	};
 	
-	console.log("Before loading wasm module we have " + wasmMemory.buffer.byteLength);
+	// console.log("Before loading wasm module we have " + wasmMemory.buffer.byteLength);
 	wasmModule = await loadWasmModule(wasmFilePath, wasmEnvironment);
-	console.log("After loading wasm module we now have " + wasmMemory.buffer.byteLength);
-	console.log("WasmModule:", wasmModule);
+	// console.log("After loading wasm module we now have " + wasmMemory.buffer.byteLength);
+	// console.log("WasmModule:", wasmModule);
 	
 	wasmModule.exports.InitStdLib(initialMemPageCount);
 	
