@@ -1,6 +1,8 @@
 
 @ NOTE: long double is an allowed type in WASM32 but casting that long double to double results in an import for __trunctfdf2 being generated. We're just not going to use long doubles for now...
 
+@ SourceMaps Specification "https://sourcemaps.info/spec.html"
+
 @ Example repository for compiling to wasm with clang "https://github.com/PetterS/clang-wasm"
 @ Wasm explorer "https://mbebenita.github.io/WasmExplorer/"
 

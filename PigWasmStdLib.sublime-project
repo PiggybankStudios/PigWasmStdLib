@@ -55,6 +55,10 @@
 			"LDBL_MIN_EXP",
 			"LDBL_TRUE_MIN",
 			"NAN",
+			"PIG_WASM_STD_USE_BUILTINS_FABS",
+			"PIG_WASM_STD_USE_BUILTINS_FMIN_FMAX",
+			"PIG_WASM_STD_USE_BUILTINS_FMOD",
+			"PIG_WASM_STD_USE_FMIN_FMAX_BUILTINS",
 			"STD_ASSERTIONS_DISABLED",
 			"STD_ASSERTIONS_ENABLED",
 			"TEST_INCLUDE_STD_LIBRARY",
@@ -69,6 +73,7 @@
 		],
 		"custom_functions":
 		[
+			"#define TestCaseFloat(testCase, expectedValue)",
 			"#define WASM_EXPORTED_FUNC(returnType, functionName, ...)",
 			"#define assert(condition)",
 			"#define fpclassify(value)",

@@ -7,6 +7,14 @@ Description:
 */
 
 // +--------------------------------------------------------------+
+// |                    Builtin Usage Controls                    |
+// +--------------------------------------------------------------+
+//TODO: Many of these have valid __builtin_ functions but they throw some kind of out of bounds error when executed. Maybe we are using the builtins wrong?
+#define PIG_WASM_STD_USE_BUILTINS_FMIN_FMAX 0
+#define PIG_WASM_STD_USE_BUILTINS_FABS      1
+#define PIG_WASM_STD_USE_BUILTINS_FMOD      0
+
+// +--------------------------------------------------------------+
 // |                        Float Helpers                         |
 // +--------------------------------------------------------------+
 int __fpclassifyf(float value)
@@ -40,6 +48,12 @@ unsigned long long __DOUBLE_BITS(double value)
 // +--------------------------------------------------------------+
 // |                        fmin and fmax                         |
 // +--------------------------------------------------------------+
+#if PIG_WASM_STD_USE_FMIN_FMAX_BUILTINS
+inline float fminf(float value1, float value2)   { return __builtin_fminf(value1, value2); }
+inline double fmin(double value1, double value2) { return __builtin_fmin(value1,  value2); }
+inline float fmaxf(float value1, float value2)   { return __builtin_fmaxf(value1, value2); }
+inline double fmax(double value1, double value2) { return __builtin_fmax(value1,  value2); }
+#else
 float fminf(float value1, float value2)
 {
 	if (isnan(value1)) { return value2; }
@@ -73,10 +87,15 @@ double fmax(double value1, double value2)
 	if (signbit(value1) != signbit(value2)) { return (signbit(value1) ? value2 : value1); }
 	return (value1 < value2 ? value2 : value1);
 }
+#endif
 
 // +--------------------------------------------------------------+
 // |                        fabs and fabsf                        |
 // +--------------------------------------------------------------+
+#if PIG_WASM_STD_USE_BUILTINS_FABS
+inline float fabsf(float value) { return __builtin_fabsf(value); }
+inline double fabs(double value) { return __builtin_fabs(value); }
+#else
 float fabsf(float value)
 {
 	union { float value; uint32_t integer; } valueUnion = { value };
@@ -89,10 +108,15 @@ double fabs(double value)
 	valueUnion.integer &= -1ULL/2;
 	return valueUnion.value;
 }
+#endif
 
 // +--------------------------------------------------------------+
 // |                        fmod and fmodf                        |
 // +--------------------------------------------------------------+
+#if PIG_WASM_STD_USE_BUILTINS_FMOD
+inline float fmodf(float numer, float denom) { return __builtin_fmodf(numer, denom); }
+inline double fmod(double numer, double denom) { return __builtin_fmod(numer, denom); }
+#else
 float fmodf(float numer, float denom)
 {
 	union { float value; uint32_t integer; } numerUnion = { numer }, denomUnion = { denom };
@@ -238,3 +262,4 @@ double fmod(double numer, double denom)
 	numerUnion.integer = numerInt;
 	return numerUnion.value;
 }
+#endif
