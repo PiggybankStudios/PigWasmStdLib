@@ -182,6 +182,58 @@ void RunMathTestCases()
 	TestCaseDouble(ceil(-INFINITY), -INFINITY);
 	TestCaseDouble(ceil(NAN), NAN);
 	
+	//TODO: Add scalbn tests!
+	
+	TestCaseFloat(sqrtf(0.0f), 0.0f);
+	TestCaseFloat(sqrtf(1.0f), 1.0f);
+	TestCaseFloat(sqrtf(0.25f), 0.5f);
+	TestCaseFloat(sqrtf(4.0f), 2.0f);
+	TestCaseFloat(sqrtf(2.0f), 1.4142135381698608f);
+	TestCaseFloat(sqrtf(-1.0f), NAN);
+	TestCaseFloat(sqrtf(100.0f), 10.0f);
+	TestCaseFloat(sqrtf(101.0f), 10.049875259399414f);
+	TestCaseFloat(sqrtf(INFINITY), INFINITY);
+	TestCaseFloat(sqrtf(-INFINITY), NAN);
+	TestCaseFloat(sqrtf(NAN), NAN);
+	
+	TestCaseDouble(sqrt(0.0), 0.0);
+	TestCaseDouble(sqrt(1.0), 1.0);
+	TestCaseDouble(sqrt(0.25), 0.5);
+	TestCaseDouble(sqrt(4.0), 2.0);
+	TestCaseDouble(sqrt(2.0), 1.4142135623730951);
+	TestCaseDouble(sqrt(-1.0), NAN);
+	TestCaseDouble(sqrt(100.0), 10.0);
+	TestCaseDouble(sqrt(101.0), 10.04987562112089);
+	TestCaseDouble(sqrt(INFINITY), INFINITY);
+	TestCaseDouble(sqrt(-INFINITY), NAN);
+	TestCaseDouble(sqrt(NAN), NAN);
+	
+	TestCaseFloat(cbrtf(0.0f), 0.0f);
+	TestCaseFloat(cbrtf(1.0f), 1.0f);
+	TestCaseFloat(cbrtf(0.125f), 0.5f);
+	TestCaseFloat(cbrtf(-0.125f), -0.5f);
+	TestCaseFloat(cbrtf(8.0f), 2.0f);
+	TestCaseFloat(cbrtf(2.0f), 1.2599210739135742f);
+	TestCaseFloat(cbrtf(-1.0f), -1.0f);
+	TestCaseFloat(cbrtf(1000.0f), 10.0f);
+	TestCaseFloat(cbrtf(1001.0f), 10.003332138061523f);
+	TestCaseFloat(cbrtf(INFINITY), INFINITY);
+	TestCaseFloat(cbrtf(-INFINITY), -INFINITY);
+	TestCaseFloat(cbrtf(NAN), NAN);
+	
+	TestCaseDouble(cbrt(0.0), 0.0);
+	TestCaseDouble(cbrt(1.0), 1.0);
+	TestCaseDouble(cbrt(0.125), 0.5);
+	TestCaseDouble(cbrt(-0.125), -0.5);
+	TestCaseDouble(cbrt(8.0), 2.0);
+	TestCaseDouble(cbrt(2.0), 1.2599210498948732);
+	TestCaseDouble(cbrt(-1.0), -1.0);
+	TestCaseDouble(cbrt(1000.0), 10.0);
+	TestCaseDouble(cbrt(1001.0), 10.003332222839095);
+	TestCaseDouble(cbrt(INFINITY), INFINITY);
+	TestCaseDouble(cbrt(-INFINITY), -INFINITY);
+	TestCaseDouble(cbrt(NAN), NAN);
+	
 	TestCaseFloat(sinf(0.0f), 0.0f);
 	TestCaseFloat(sinf(0.5f), 0.4794255495071411f);
 	TestCaseFloat(sinf(1.0f), 0.8414709568023682f);
@@ -229,6 +281,54 @@ void RunMathTestCases()
 	TestCaseDouble(tan(2*M_PI), -2.4492935982947064e-16); //very close to 0
 	TestCaseDouble(tan(M_PI_2 - DBL_EPSILON), 3530114321217157.5); //very large
 	TestCaseDouble(tan(M_PI_2 + DBL_EPSILON), -6218431163823738.0); //very large (negative)
+	
+	TestCaseFloat(asinf(0.0f), 0.0f);
+	TestCaseFloat(asinf(0.1f), 0.1001674234867096f);
+	TestCaseFloat(asinf(0.5f), 0.5235987901687622f);
+	TestCaseFloat(asinf(1.0f), 1.5707963705062866f);
+	TestCaseFloat(asinf(-1.0f), -1.5707963705062866f);
+	TestCaseFloat(asinf(1.1f), NAN);
+	TestCaseFloat(asinf(-1.1f), NAN);
+	
+	TestCaseDouble(asin(0.0), 0.0);
+	TestCaseDouble(asin(0.1), 0.1001674211615598);
+	TestCaseDouble(asin(0.5), 0.5235987755982989);
+	TestCaseDouble(asin(1.0), 1.5707963267948966);
+	TestCaseDouble(asin(-1.0), -1.5707963267948966);
+	TestCaseDouble(asin(1.1), NAN);
+	TestCaseDouble(asin(-1.1), NAN);
+	
+	TestCaseFloat(acosf(0.0f), 1.570796251296997f);
+	TestCaseFloat(acosf(0.1f), 1.4706288576126099f);
+	TestCaseFloat(acosf(0.5f), 1.0471975803375244f);
+	TestCaseFloat(acosf(1.0f), 0.0f);
+	TestCaseFloat(acosf(-1.0f), 3.141592502593994f);
+	TestCaseFloat(acosf(1.1f), NAN);
+	TestCaseFloat(acosf(-1.1f), NAN);
+	
+	TestCaseDouble(acos(0.0), 1.5707963267948966);
+	TestCaseDouble(acos(0.1), 1.4706289056333368);
+	TestCaseDouble(acos(0.5), 1.0471975511965979);
+	TestCaseDouble(acos(1.0), 0.0);
+	TestCaseDouble(acos(-1.0), 3.141592653589793);
+	TestCaseDouble(acos(1.1), NAN);
+	TestCaseDouble(acos(-1.1), NAN);
+	
+	TestCaseFloat(atanf(0.0f), 0.0f);
+	TestCaseFloat(atanf(0.1f), 0.09966865181922913f);
+	TestCaseFloat(atanf(0.5f), 0.46364760398864746f);
+	TestCaseFloat(atanf(1.0f), 0.7853981852531433f);
+	TestCaseFloat(atanf(-1.0f), -0.7853981852531433f);
+	TestCaseFloat(atanf(10.0f), 1.4711276292800903f);
+	TestCaseFloat(atanf(-10.0f), -1.4711276292800903f);
+	
+	TestCaseDouble(atan(0.0), 0.0);
+	TestCaseDouble(atan(0.1), 0.09966865249116204);
+	TestCaseDouble(atan(0.5), 0.4636476090008061);
+	TestCaseDouble(atan(1.0), 0.7853981633974483);
+	TestCaseDouble(atan(-1.0), -0.7853981633974483);
+	TestCaseDouble(atan(10.0), 1.4711276743037347);
+	TestCaseDouble(atan(-10.0), -1.4711276743037347);
 	
 	jsPrintNumber("Ran Math Tests", numCases);
 }

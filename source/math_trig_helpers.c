@@ -756,3 +756,114 @@ medium:
 	outPntr[1] = ty[1];
 	return n;
 }
+
+// +--------------------------------------------------------------+
+// |                arc trig helpers and constants                |
+// +--------------------------------------------------------------+
+
+static const double pio2 = 1.570796326794896558e+00;
+
+static const float
+	pio2_hi = 1.5707962513e+00, // 0x3fc90fda
+	pio2_lo = 7.5497894159e-08; // 0x33a22168
+static const float // coefficients for asinf_helper(x^2)
+	pS0 =  1.6666586697e-01,
+	pS1 = -4.2743422091e-02,
+	pS2 = -8.6563630030e-03,
+	qS1 = -7.0662963390e-01;
+static const double
+	pio2d_hi = 1.57079632679489655800e+00, // 0x3FF921FB, 0x54442D18
+	pio2d_lo = 6.12323399573676603587e-17; // 0x3C91A626, 0x33145C07
+static const double // coefficients for asin_helper(x^2)
+	pS0d =  1.66666666666666657415e-01, // 0x3FC55555, 0x55555555
+	pS1d = -3.25565818622400915405e-01, // 0xBFD4D612, 0x03EB6F7D
+	pS2d =  2.01212532134862925881e-01, // 0x3FC9C155, 0x0E884455
+	pS3d = -4.00555345006794114027e-02, // 0xBFA48228, 0xB5688F3B
+	pS4d =  7.91534994289814532176e-04, // 0x3F49EFE0, 0x7501B288
+	pS5d =  3.47933107596021167570e-05, // 0x3F023DE1, 0x0DFDF709
+	qS1d = -2.40339491173441421878e+00, // 0xC0033A27, 0x1C8A2D4B
+	qS2d =  2.02094576023350569471e+00, // 0x40002AE5, 0x9C598AC8
+	qS3d = -6.88283971605453293030e-01, // 0xBFE6066C, 0x1B8D0159
+	qS4d =  7.70381505559019352791e-02; // 0x3FB3B8C5, 0xB12E9282
+
+static const float atanhi[] = {
+	4.6364760399e-01, // atan(0.5)hi 0x3eed6338
+	7.8539812565e-01, // atan(1.0)hi 0x3f490fda
+	9.8279368877e-01, // atan(1.5)hi 0x3f7b985e
+	1.5707962513e+00, // atan(inf)hi 0x3fc90fda
+};
+
+static const float atanlo[] = {
+	5.0121582440e-09, // atan(0.5)lo 0x31ac3769
+	3.7748947079e-08, // atan(1.0)lo 0x33222168
+	3.4473217170e-08, // atan(1.5)lo 0x33140fb4
+	7.5497894159e-08, // atan(inf)lo 0x33a22168
+};
+
+static const float aT[] = {
+	 3.3333328366e-01,
+	-1.9999158382e-01,
+	 1.4253635705e-01,
+	-1.0648017377e-01,
+	 6.1687607318e-02,
+};
+
+static const double atanhid[] = {
+  4.63647609000806093515e-01, /* atan(0.5)hi 0x3FDDAC67, 0x0561BB4F */
+  7.85398163397448278999e-01, /* atan(1.0)hi 0x3FE921FB, 0x54442D18 */
+  9.82793723247329054082e-01, /* atan(1.5)hi 0x3FEF730B, 0xD281F69B */
+  1.57079632679489655800e+00, /* atan(inf)hi 0x3FF921FB, 0x54442D18 */
+};
+
+static const double atanlod[] = {
+  2.26987774529616870924e-17, /* atan(0.5)lo 0x3C7A2B7F, 0x222F65E2 */
+  3.06161699786838301793e-17, /* atan(1.0)lo 0x3C81A626, 0x33145C07 */
+  1.39033110312309984516e-17, /* atan(1.5)lo 0x3C700788, 0x7AF0CBBD */
+  6.12323399573676603587e-17, /* atan(inf)lo 0x3C91A626, 0x33145C07 */
+};
+
+static const double aTd[] = {
+  3.33333333333329318027e-01, /* 0x3FD55555, 0x5555550D */
+ -1.99999999998764832476e-01, /* 0xBFC99999, 0x9998EBC4 */
+  1.42857142725034663711e-01, /* 0x3FC24924, 0x920083FF */
+ -1.11111104054623557880e-01, /* 0xBFBC71C6, 0xFE231671 */
+  9.09088713343650656196e-02, /* 0x3FB745CD, 0xC54C206E */
+ -7.69187620504482999495e-02, /* 0xBFB3B0F2, 0xAF749A6D */
+  6.66107313738753120669e-02, /* 0x3FB10D66, 0xA0D03D51 */
+ -5.83357013379057348645e-02, /* 0xBFADDE2D, 0x52DEFD9A */
+  4.97687799461593236017e-02, /* 0x3FA97B4B, 0x24760DEB */
+ -3.65315727442169155270e-02, /* 0xBFA2B444, 0x2C6A6C2F */
+  1.62858201153657823623e-02, /* 0x3F90AD3A, 0xE322DA11 */
+};
+
+static float asinf_helper(float value)
+{
+	float_t pVar, qVar;
+	pVar = value * (pS0 + (value * (pS1 + (value * pS2))));
+	qVar = 1.0f + (value * qS1);
+	return (pVar / qVar);
+}
+
+static double asin_helper(double value)
+{
+	double_t p, q;
+	p = value * (pS0d + value * (pS1d + value * (pS2d + value * (pS3d + value * (pS4d + value * pS5d)))));
+	q = 1.0 + value * (qS1d + value * (qS2d + value * (qS3d + value * qS4d)));
+	return (p / q);
+}
+
+static float acosf_helper(float value)
+{
+	float_t numer, denom;
+	numer = value * (pS0 + value * (pS1 + value * pS2));
+	denom = 1.0f + (value * qS1);
+	return (numer / denom);
+}
+
+static double acos_helper(double value)
+{
+	double_t numer, denom;
+	numer = value * (pS0d + value * (pS1d + value * (pS2d + value * (pS3d + value * (pS4d + value * pS5d)))));
+	denom = 1.0 + value * (qS1d + value * (qS2d + value * (qS3d + value * qS4d)));
+	return (numer / denom);
+}

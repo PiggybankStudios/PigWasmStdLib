@@ -11,6 +11,11 @@ Date:   09\23\2023
 
 EXTERN_C_START
 
+//NOTE: clang was shadowing our intrinsics implementations (like floor, ceil, scalbnf, sqrt, etc.) with it's builtin ones,
+// we've decided to route through our functions using macros and functions prefixed with _.
+// Even if they route to builtins at the end of the day, this gives us the ability
+// to test our implementation and the control to route these however we want.
+
 // +--------------------------------------------------------------+
 // |                           Defines                            |
 // +--------------------------------------------------------------+
@@ -99,6 +104,12 @@ unsigned long long __DOUBLE_BITS(double value);
 void fp_force_evalf(float value);
 void fp_force_eval(double value);
 
+float __math_invalidf(float value);
+double __math_invalid(double value);
+
+float eval_as_float(float x);
+double eval_as_double(double x);
+
 // +--------------------------------------------------------------+
 // |                          Functions                           |
 // +--------------------------------------------------------------+
@@ -119,8 +130,6 @@ double fmod(double numer, double denom);
 float  roundf(float value);
 double round(double value);
 
-//NOTE: clang was shadowing our floor/ceil implementations with it's builtin ones, we're going to route through our functions even if they route to builtins at the end of the day
-
 float  _floorf(float value);
 double _floor(double value);
 #define floorf(value) _floorf(value)
@@ -128,16 +137,24 @@ double _floor(double value);
 
 float  _ceilf(float value);
 double _ceil(double value);
-#define ceilf(value)  _ceilf(value)
-#define ceil(value)   _ceil(value)
-
-//NOTE: same shadowing issue as floor/ceil
+#define ceilf(value) _ceilf(value)
+#define ceil(value)  _ceil(value)
 
 float  _scalbnf(float value, int power);
 double _scalbn(double value, int power);
 // long double _scalbnl(long double value, int power);
 #define scalbnf(value, power) _scalbnf(value, power)
 #define scalbn(value, power)  _scalbn(value, power)
+
+float  sqrtf(float value);
+double sqrt(double value);
+// #define sqrtf(value) _sqrtf(value)
+// #define sqrt(value)  _sqrt(value)
+
+float  _cbrtf(float value);
+double _cbrt(double value);
+#define cbrtf(value) _cbrtf(value)
+#define cbrt(value)  _cbrt(value)
 
 float  sinf(float value);
 double sin(double value);
@@ -148,26 +165,20 @@ double cos(double value);
 float  tanf(float value);
 double tan(double value);
 
-float  asinf(float value); //TODO: Implement me!
-double asin(double value); //TODO: Implement me!
+float  asinf(float value);
+double asin(double value);
 
-float  acosf(float value); //TODO: Implement me!
-double acos(double value); //TODO: Implement me!
+float  acosf(float value);
+double acos(double value);
 
-float  atanf(float value); //TODO: Implement me!
-double atan(double value); //TODO: Implement me!
+float  atanf(float value);
+double atan(double value);
 
 float  atan2f(float numer, float denom); //TODO: Implement me!
 double atan2(double numer, double denom); //TODO: Implement me!
 
 float  powf(float value, float exponent); //TODO: Implement me!
 double pow(double value, double exponent); //TODO: Implement me!
-
-float  sqrtf(float value); //TODO: Implement me!
-double sqrt(double value); //TODO: Implement me!
-
-float  cbrtf(float value); //TODO: Implement me!
-double cbrt(double value); //TODO: Implement me!
 
 float  logf(float value); //TODO: Implement me!
 double log(double value); //TODO: Implement me!
@@ -240,6 +251,10 @@ unsigned __FLOAT_BITS(float value)
 unsigned long long __DOUBLE_BITS(double value)
 void fp_force_evalf(float value)
 void fp_force_eval(double value)
+float __math_invalidf(float value)
+double __math_invalid(double value)
+inline float eval_as_float(float x)
+inline double eval_as_double(double x)
 float  fminf(float value1, float value2)
 double fmin(double value1, double value2)
 float  fmaxf(float value1, float value2)

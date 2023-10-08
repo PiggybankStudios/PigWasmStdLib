@@ -8,6 +8,22 @@
 
 - "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.37.32822\include\vcruntime.h"
 
+# WebAssembly Clang Compiler Options
+	-matomics, -mno-atomics
+	-mbulk-memory, -mno-bulk-memory
+	-mexception-handling, -mno-exception-handling
+	-mextended-const, -mno-extended-const
+	-mmultimemory, -mno-multimemory
+	-mmultivalue, -mno-multivalue
+	-mmutable-globals, -mno-mutable-globals
+	-mnontrapping-fptoint, -mno-nontrapping-fptoint
+	-mreference-types, -mno-reference-types
+	-mrelaxed-simd, -mno-relaxed-simd
+	-msign-ext, -mno-sign-ext
+	-msimd128, -mno-simd128
+	-mtail-call, -mno-tail-call
+#
+
 # Math.h Notes
 	[ ] "https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html"
 	[ ] Outside strict ISO C mode (-ansi, -std=c90, -std=c99 or -std=c11), the functions (below) may be handled as built-in functions. All these functions have corresponding versions prefixed with __builtin_, which may be used even in strict C90 mode. 

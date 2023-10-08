@@ -35,7 +35,12 @@ del *.wasm > NUL 2> NUL
 del *.js > NUL 2> NUL
 del *.o > NUL 2> NUL
 
-set CompilerFlags=-nostdlib -nostdinc --target=wasm32 -mbulk-memory
+rem --no-standard-libraries = ?
+rem --no-standard-includes = ?
+rem --target=wasm32 = ?
+rem -mbulk-memory = Prevent conversion of simple loops into memset or memcpy?
+rem -fno-builtin = (Optional) makes some calls like sqrtf actually go to our own sqrtf function rather than linking to the builtin clang implementation
+set CompilerFlags=--no-standard-libraries --no-standard-includes --target=wasm32 -mbulk-memory
 set IncludeDirectories=-I"%IncludeDirectory%" -I"%SourceDirectory%" -I"%LibDirectory%\include"
 rem --no-entry        = ?
 rem --allow-undefined = ?

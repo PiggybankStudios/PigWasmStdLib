@@ -10,13 +10,16 @@ Description:
 // |                    Builtin Usage Controls                    |
 // +--------------------------------------------------------------+
 //TODO: Many of these have valid __builtin_ functions but they throw some kind of out of bounds error when executed. Maybe we are using the builtins wrong?
-#define PIG_WASM_STD_USE_BUILTINS_FMIN_FMAX   0
-#define PIG_WASM_STD_USE_BUILTINS_FABS        1
-#define PIG_WASM_STD_USE_BUILTINS_FMOD        0
-#define PIG_WASM_STD_USE_BUILTINS_ROUND       0
-#define PIG_WASM_STD_USE_BUILTINS_FLOOR_CEIL  1
-#define PIG_WASM_STD_USE_BUILTINS_SCALBN      0
-#define PIG_WASM_STD_USE_BUILTINS_SIN_COS_TAN 0
+#define PIG_WASM_STD_USE_BUILTINS_FMIN_FMAX      0
+#define PIG_WASM_STD_USE_BUILTINS_FABS           1
+#define PIG_WASM_STD_USE_BUILTINS_FMOD           0
+#define PIG_WASM_STD_USE_BUILTINS_ROUND          0
+#define PIG_WASM_STD_USE_BUILTINS_FLOOR_CEIL     1
+#define PIG_WASM_STD_USE_BUILTINS_SCALBN         0
+#define PIG_WASM_STD_USE_BUILTINS_SQRT           0
+#define PIG_WASM_STD_USE_BUILTINS_CBRT           0
+#define PIG_WASM_STD_USE_BUILTINS_SIN_COS_TAN    0
+#define PIG_WASM_STD_USE_BUILTINS_ASIN_ACOS_ATAN 0
 
 // +--------------------------------------------------------------+
 // |                        Float Helpers                         |
@@ -62,6 +65,63 @@ void fp_force_eval(double value)
 	volatile double volatileValue;
 	volatileValue = value;
 }
+
+float __math_invalidf(float value)
+{
+	return (value - value) / (value - value);
+}
+double __math_invalid(double value)
+{
+	return (value - value) / (value - value);
+}
+
+float eval_as_float(float x)
+{
+	float  y = x;
+	return y;
+}
+double eval_as_double(double x)
+{
+	double y = x;
+	return y;
+}
+
+#if !PIG_WASM_STD_USE_BUILTINS_SQRT || !PIG_WASM_STD_USE_BUILTINS_CBRT
+
+static inline uint32_t MultiplyU32Overflow(uint32_t left, uint32_t right)
+{
+	return ((uint64_t)left * right) >> 32;
+}
+// returns a*b*2^-64 - e, with error 0 <= e < 3.
+static inline uint64_t MultiplyU64Overflow(uint64_t a, uint64_t b)
+{
+	uint64_t ahi = (a >> 32);
+	uint64_t alo = (a & 0xFFFFFFFF);
+	uint64_t bhi = (b >> 32);
+	uint64_t blo = (b & 0xFFFFFFFF);
+	return (ahi * bhi) + ((ahi * blo) >> 32) + ((alo * bhi) >> 32);
+}
+
+const uint16_t __rsqrt_table[128] = {
+	0xb451,0xb2f0,0xb196,0xb044,0xaef9,0xadb6,0xac79,0xab43,
+	0xaa14,0xa8eb,0xa7c8,0xa6aa,0xa592,0xa480,0xa373,0xa26b,
+	0xa168,0xa06a,0x9f70,0x9e7b,0x9d8a,0x9c9d,0x9bb5,0x9ad1,
+	0x99f0,0x9913,0x983a,0x9765,0x9693,0x95c4,0x94f8,0x9430,
+	0x936b,0x92a9,0x91ea,0x912e,0x9075,0x8fbe,0x8f0a,0x8e59,
+	0x8daa,0x8cfe,0x8c54,0x8bac,0x8b07,0x8a64,0x89c4,0x8925,
+	0x8889,0x87ee,0x8756,0x86c0,0x862b,0x8599,0x8508,0x8479,
+	0x83ec,0x8361,0x82d8,0x8250,0x81c9,0x8145,0x80c2,0x8040,
+	0xff02,0xfd0e,0xfb25,0xf947,0xf773,0xf5aa,0xf3ea,0xf234,
+	0xf087,0xeee3,0xed47,0xebb3,0xea27,0xe8a3,0xe727,0xe5b2,
+	0xe443,0xe2dc,0xe17a,0xe020,0xdecb,0xdd7d,0xdc34,0xdaf1,
+	0xd9b3,0xd87b,0xd748,0xd61a,0xd4f1,0xd3cd,0xd2ad,0xd192,
+	0xd07b,0xcf69,0xce5b,0xcd51,0xcc4a,0xcb48,0xca4a,0xc94f,
+	0xc858,0xc764,0xc674,0xc587,0xc49d,0xc3b7,0xc2d4,0xc1f4,
+	0xc116,0xc03c,0xbf65,0xbe90,0xbdbe,0xbcef,0xbc23,0xbb59,
+	0xba91,0xb9cc,0xb90a,0xb84a,0xb78c,0xb6d0,0xb617,0xb560,
+};
+
+#endif
 
 // +--------------------------------------------------------------+
 // |                        fmin and fmax                         |
@@ -342,7 +402,6 @@ inline double _floor(double value) { return __builtin_floor(value); }
 inline float _ceilf(float value) { return __builtin_ceilf(value); }
 inline double _ceil(double value) { return __builtin_ceil(value); }
 #else
-
 float _floorf(float value)
 {
 	union { float value; uint32_t integer; } valueUnion = { value };
@@ -428,7 +487,6 @@ double _ceil(double value)
 	if (temp < 0) { return value + temp + 1; }
 	return value + temp;
 }
-
 #endif
 
 // +--------------------------------------------------------------+
@@ -501,6 +559,335 @@ double _scalbn(double value, int power)
 	valueUnion.integer = ((uint64_t)(0x3FF + power) << 52);
 	result = result * valueUnion.value;
 	return result;
+}
+#endif
+
+// +--------------------------------------------------------------+
+// |                        sqrt and sqrtf                        |
+// +--------------------------------------------------------------+
+#if PIG_WASM_STD_USE_BUILTINS_SQRT
+inline float sqrtf(float value)  { return __builtin_sqrtf(value); }
+inline double sqrt(double value) { return __builtin_sqrt(value);  }
+#else
+float sqrtf(float value)
+{
+	uint32_t valueInt, mVar, mVar1, mVar0, even, ey;
+	
+	jsPrintString("Called sqrtf!");
+	valueInt = asuint(value);
+	if (predict_false(valueInt - 0x00800000 >= 0x7F800000 - 0x00800000))
+	{
+		// value < 0x1p-126 or inf or nan.
+		if (valueInt * 2 == 0) { return value; }
+		if (valueInt == 0x7F800000) { return value; }
+		if (valueInt > 0x7F800000) { return __math_invalidf(value); }
+		// value is subnormal, normalize it.
+		valueInt = asuint(value * 0x1p23f);
+		valueInt -= (23 << 23);
+	}
+	
+	// value = 4^e mVar; with int e and mVar in [1, 4).
+	even = (valueInt & 0x00800000);
+	mVar1 = ((valueInt << 8) | 0x80000000);
+	mVar0 = ((valueInt << 7) & 0x7FFFFFFF);
+	mVar = (even ? mVar0 : mVar1);
+	
+	// 2^e is the exponent part of the return value.
+	ey = (valueInt >> 1);
+	ey += (0x3F800000 >> 1);
+	ey &= 0x7F800000;
+	
+	// compute rVar ~ 1/sqrt(mVar), sVar ~ sqrt(mVar) with 2 goldschmidt iterations.
+	static const uint32_t three = 0xC0000000;
+	uint32_t rVar, sVar, dVar, uVar, iVar;
+	iVar = (valueInt >> 17) % 128;
+	rVar = (uint32_t)__rsqrt_table[iVar] << 16;
+	// |rVar*sqrt(mVar) - 1| < 0x1p-8
+	sVar = MultiplyU32Overflow(mVar, rVar);
+	// |sVar/sqrt(mVar) - 1| < 0x1p-8
+	dVar = MultiplyU32Overflow(sVar, rVar);
+	uVar = three - dVar;
+	rVar = MultiplyU32Overflow(rVar, uVar) << 1;
+	// |rVar*sqrt(mVar) - 1| < 0x1.7bp-16
+	sVar = MultiplyU32Overflow(sVar, uVar) << 1;
+	// |sVar/sqrt(mVar) - 1| < 0x1.7bp-16
+	dVar = MultiplyU32Overflow(sVar, rVar);
+	uVar = three - dVar;
+	sVar = MultiplyU32Overflow(sVar, uVar);
+	// -0x1.03p-28 < sVar/sqrt(mVar) - 1 < 0x1.fp-31
+	sVar = (sVar - 1)>>6;
+	// sVar < sqrt(mVar) < sVar + 0x1.08p-23
+	
+	// compute nearest rounded result. 
+	uint32_t dVar0, dVar1, dVar2;
+	float result, tVar;
+	dVar0 = (mVar << 16) - (sVar * sVar);
+	dVar1 = sVar - dVar0;
+	dVar2 = dVar1 + sVar + 1;
+	sVar += (dVar1 >> 31);
+	sVar &= 0x007FFFFF;
+	sVar |= ey;
+	result = asfloat(sVar);
+	// handle rounding and inexact exception.
+	uint32_t tiny = (predict_false(dVar2 == 0) ? 0 : 0x01000000);
+	tiny |= ((dVar1 ^ dVar2) & 0x80000000);
+	tVar = asfloat(tiny);
+	result = eval_as_float(result + tVar);
+	return result;
+}
+double sqrt(double value)
+{
+	uint64_t valueInt, top, mVar;
+	
+	// special case handling.
+	valueInt = asuint64(value);
+	top = (valueInt >> 52);
+	if (predict_false((top - 0x001) >= (0x7FF - 0x001)))
+	{
+		// value < 0x1p-1022 or inf or nan.
+		if (valueInt * 2 == 0) { return value; }
+		if (valueInt == 0x7FF0000000000000) { return value; }
+		if (valueInt > 0x7FF0000000000000) { return __math_invalid(value); }
+		// value is subnormal, normalize it.
+		valueInt = asuint64(value * 0x1p52);
+		top = valueInt >> 52;
+		top -= 52;
+	}
+	
+	// argument reduction:
+	// value = 4^e mVar; with integer e, and mVar in [1, 4)
+	// mVar: fixed point representation [2.62]
+	// 2^e is the exponent part of the result.
+	int even = (top & 1);
+	mVar = ((valueInt << 11) | 0x8000000000000000);
+	if (even) { mVar >>= 1; }
+	top = ((top + 0x3FF) >> 1);
+	
+	/* approximate rVar ~ 1/sqrt(mVar) and sVar ~ sqrt(mVar) when mVar in [1,4)
+
+	   initial estimate:
+	   7bit table lookup (1bit exponent and 6bit significand).
+
+	   iterative approximation:
+	   using 2 goldschmidt iterations with 32bit int arithmetics
+	   and a final iteration with 64bit int arithmetics.
+
+	   details:
+
+	   the relative error (e = r0 sqrt(mVar)-1) of a linear estimate
+	   (r0 = a mVar + b) is |e| < 0.085955 ~ 0x1.6p-4 at best,
+	   a table lookup is faster and needs one less iteration
+	   6 bit lookup table (128b) gives |e| < 0x1.f9p-8
+	   7 bit lookup table (256b) gives |e| < 0x1.fdp-9
+	   for single and double prec 6bit is enough but for quad
+	   prec 7bit is needed (or modified iterations). to avoid
+	   one more iteration >=13bit table would be needed (16k).
+
+	   a newton-raphson iteration for rVar is
+	     w = rVar*rVar
+	     uVar = 3 - mVar*w
+	     rVar = rVar*uVar/2
+	   can use a goldschmidt iteration for sVar at the end or
+	     sVar = mVar*rVar
+
+	   first goldschmidt iteration is
+	     sVar = mVar*rVar
+	     uVar = 3 - sVar*rVar
+	     rVar = rVar*uVar/2
+	     sVar = sVar*uVar/2
+	   next goldschmidt iteration is
+	     uVar = 3 - sVar*rVar
+	     rVar = rVar*uVar/2
+	     sVar = sVar*uVar/2
+	   and at the end rVar is not computed only sVar.
+
+	   they use the same amount of operations and converge at the
+	   same quadratic rate, i.e. if
+	     r1 sqrt(mVar) - 1 = e, then
+	     r2 sqrt(mVar) - 1 = -3/2 e^2 - 1/2 e^3
+	   the advantage of goldschmidt is that the mul for sVar and rVar
+	   are independent (computed in parallel), however it is not
+	   "self synchronizing": it only uses the input mVar in the
+	   first iteration so rounding errors accumulate. at the end
+	   or when switching to larger precision arithmetics rounding
+	   errors dominate so the first iteration should be used.
+
+	   the fixed point representations are
+	     mVar: 2.30 rVar: 0.32, sVar: 2.30, dVar: 2.30, uVar: 2.30, three: 2.30
+	   and after switching to 64 bit
+	     mVar: 2.62 rVar: 0.64, sVar: 2.62, dVar: 2.62, uVar: 2.62, three: 2.62
+	*/
+	
+	static const uint64_t three = 0xC0000000;
+	uint64_t rVar, sVar, dVar, uVar, tableIndex;
+	
+	tableIndex = ((valueInt >> 46) % 128);
+	rVar = ((uint32_t)__rsqrt_table[tableIndex] << 16);
+	// |rVar sqrt(mVar) - 1| < 0x1.fdp-9
+	sVar = MultiplyU32Overflow((mVar >> 32), rVar);
+	// |sVar/sqrt(mVar) - 1| < 0x1.fdp-9
+	dVar = MultiplyU32Overflow(sVar, rVar);
+	uVar = three - dVar;
+	rVar = (MultiplyU32Overflow(rVar, uVar) << 1);
+	// |rVar sqrt(mVar) - 1| < 0x1.7bp-16
+	sVar = (MultiplyU32Overflow(sVar, uVar) << 1);
+	// |sVar/sqrt(mVar) - 1| < 0x1.7bp-16
+	dVar = MultiplyU32Overflow(sVar, rVar);
+	uVar = three - dVar;
+	rVar = (MultiplyU32Overflow(rVar, uVar) << 1);
+	// |rVar sqrt(mVar) - 1| < 0x1.3704p-29 (measured worst-case)
+	rVar = (rVar << 32);
+	sVar = MultiplyU64Overflow(mVar, rVar);
+	dVar = MultiplyU64Overflow(sVar, rVar);
+	uVar = (three << 32) - dVar;
+	sVar = MultiplyU64Overflow(sVar, uVar);  // repr: 3.61
+	// -0x1p-57 < sVar - sqrt(mVar) < 0x1.8001p-61
+	sVar = ((sVar - 2) >> 9); // repr: 12.52
+	// -0x1.09p-52 < sVar - sqrt(mVar) < -0x1.fffcp-63
+	
+	// sVar < sqrt(mVar) < sVar + 0x1.09p-52,
+	// compute nearest rounded result:
+	// the nearest result to 52 bits is either sVar or sVar+0x1p-52,
+	// we can decide by comparing (2^52 sVar + 0.5)^2 to 2^104 mVar.
+	uint64_t dVar0, dVar1, dVar2;
+	double result, tVar;
+	dVar0 = (mVar << 42) - (sVar * sVar);
+	dVar1 = sVar - dVar0;
+	dVar2 = dVar1 + sVar + 1;
+	sVar += (dVar1 >> 63);
+	sVar &= 0x000FFFFFFFFFFFFF;
+	sVar |= (top << 52);
+	result = asdouble(sVar);
+	// handle rounding modes and inexact exception:
+	// only (sVar+1)^2 == 2^42 mVar case is exact otherwise
+	// add a tiny value to cause the fenv effects.
+	uint64_t tiny = (predict_false(dVar2==0) ? 0 : 0x0010000000000000);
+	tiny |= ((dVar1 ^ dVar2) & 0x8000000000000000);
+	tVar = asdouble(tiny);
+	result = eval_as_double(result + tVar);
+	return result;
+}
+#endif
+
+// +--------------------------------------------------------------+
+// |                        cbrt and cbrtf                        |
+// +--------------------------------------------------------------+
+#if PIG_WASM_STD_USE_BUILTINS_CBRT
+inline float _cbrtf(float value)  { return __builtin_cbrtf(value); }
+inline double _cbrt(double value) { return __builtin_cbrt(value);  }
+#else
+static const unsigned
+	B1 = 709958130, // B1 = (127-127.0/3-0.03306235651)*2**23
+	B2 = 642849266; // B2 = (127-127.0/3-24/3-0.03306235651)*2**23
+static const uint32_t
+	Bd1 = 715094163, // B1 = (1023-1023/3-0.03306235651)*2**20
+	Bd2 = 696219795; // B2 = (1023-1023/3-54/3-0.03306235651)*2**20
+// |1/cbrt(x) - p(x)| < 2**-23.5 (~[-7.93e-8, 7.929e-8]).
+static const double
+	P0 =  1.87595182427177009643,  // 0x3ffe03e6, 0x0f61e692
+	P1 = -1.88497979543377169875,  // 0xbffe28e0, 0x92f02420
+	P2 =  1.621429720105354466140, // 0x3ff9f160, 0x4a49d6c2
+	P3 = -0.758397934778766047437, // 0xbfe844cb, 0xbee751d9
+	P4 =  0.145996192886612446982; // 0x3fc2b000, 0xd4e4edd7
+
+float _cbrtf(float value)
+{
+	double_t tVarCubed, tVar;
+	union { float value; uint32_t integer; } valueUnion = { value };
+	uint32_t valueUnsigned = (valueUnion.integer & 0x7FFFFFFF);
+	
+	if (valueUnsigned >= 0x7F800000) { return (value + value); } // cbrt(NaN,INF) is itself
+	
+	// rough cbrt to 5 bits
+	if (valueUnsigned < 0x00800000) // zero or subnormal?
+	{
+		if (valueUnsigned == 0) { return value; } // cbrt(+-0) is itself
+		valueUnion.value = (value * 0x1p24F);
+		valueUnsigned = (valueUnion.integer & 0x7FFFFFFF);
+		valueUnsigned = (valueUnsigned / 3) + B2;
+	}
+	else { valueUnsigned = (valueUnsigned / 3) + B1; }
+	valueUnion.integer &= 0x80000000;
+	valueUnion.integer |= valueUnsigned;
+	
+	// First step Newton iteration (solving t*t-value/t == 0) to 16 bits.  In
+	// double precision so that its terms can be arranged for efficiency
+	// without causing overflow or underflow.
+	tVar = valueUnion.value;
+	tVarCubed = (tVar * tVar * tVar);
+	tVar = tVar * ((double_t)value + value + tVarCubed) / (value + tVarCubed + tVarCubed);
+	
+	// Second step Newton iteration to 47 bits.  In double precision for
+	// efficiency and accuracy.
+	tVarCubed = (tVar * tVar * tVar);
+	tVar = tVar * ((double_t)value + value + tVarCubed) / (value + tVarCubed + tVarCubed);
+	
+	// rounding to 24 bits is perfect in round-to-nearest mode
+	return tVar;
+}
+double _cbrt(double value)
+{
+	union { double value; uint64_t integer; } valueUnion = { value };
+	double_t rVar, sVar, tVar, wVar;
+	uint32_t upperUnsigned = ((valueUnion.integer >> 32) & 0x7FFFFFFF);
+	
+	if (upperUnsigned >= 0x7FF00000) { return (value + value); } // cbrt(NaN,INF) is itself
+	
+	// Rough cbrt to 5 bits:
+	//    cbrt(2**e*(1+m) ~= 2**(e/3)*(1+(e%3+m)/3)
+	// where e is integral and >= 0, m is real and in [0, 1), and "/" and
+	// "%" are integer division and modulus with rounding towards minus
+	// infinity.  The RHS is always >= the LHS and has a maximum relative
+	// error of about 1 in 16.  Adding a bias of -0.03306235651 to the
+	// (e%3+m)/3 term reduces the error to about 1 in 32. With the IEEE
+	// floating point representation, for finite positive normal values,
+	// ordinary integer divison of the value in bits magically gives
+	// almost exactly the RHS of the above provided we first subtract the
+	// exponent bias (1023 for doubles) and later add it back.  We do the
+	// subtraction virtually to keep e >= 0 so that ordinary integer
+	// division rounds towards minus infinity; this is also efficient.
+	if (upperUnsigned < 0x00100000) // zero or subnormal?
+	{
+		valueUnion.value = value * 0x1p54;
+		upperUnsigned = ((valueUnion.integer >> 32) & 0x7FFFFFFF);
+		if (upperUnsigned == 0) { return value; } // cbrt(0) is itself
+		upperUnsigned = upperUnsigned/3 + Bd2;
+	}
+	else { upperUnsigned = upperUnsigned/3 + Bd1; }
+	valueUnion.integer &= (1ULL << 63);
+	valueUnion.integer |= (uint64_t)upperUnsigned << 32;
+	tVar = valueUnion.value;
+	
+	// New cbrt to 23 bits:
+	//    cbrt(value) = tVar*cbrt(value/tVar**3) ~= tVar*P(tVar**3/value)
+	// where P(rVar) is a polynomial of degree 4 that approximates 1/cbrt(rVar)
+	// to within 2**-23.5 when |rVar - 1| < 1/10.  The rough approximation
+	// has produced tVar such than |tVar/cbrt(value) - 1| ~< 1/32, and cubing this
+	// gives us bounds for rVar = tVar**3/value.
+	//
+	// Try to optimize for parallel evaluation as in __tanf.c.
+	rVar = (tVar * tVar) * (tVar / value);
+	tVar = tVar * ((P0 + (rVar * (P1 + (rVar * P2)))) + ((rVar * rVar) * rVar) * (P3 + (rVar * P4)));
+	
+	// Round tVar away from zero to 23 bits (sloppily except for ensuring that
+	// the result is larger in magnitude than cbrt(value) but not much more than
+	// 2 23-bit ulps larger).  With rounding towards zero, the error bound
+	// would be ~5/6 instead of ~4/6.  With a maximum error of 2 23-bit ulps
+	// in the rounded tVar, the infinite-precision error in the Newton
+	// approximation barely affects third digit in the final error
+	// 0.667; the error in the rounded tVar can be up to about 3 23-bit ulps
+	// before the final error is larger than 0.667 ulps.
+	valueUnion.value = tVar;
+	valueUnion.integer = ((valueUnion.integer + 0x80000000) & 0xFFFFFFFFC0000000ULL);
+	tVar = valueUnion.value;
+	
+	// one step Newton iteration to 53 bits with error < 0.667 ulps
+	sVar = tVar * tVar;         // tVar*tVar is exact
+	rVar = value / sVar;         // error <= 0.5 ulps; |rVar| < |tVar|
+	wVar = tVar + tVar;         // tVar+tVar is exact
+	rVar = (rVar - tVar) / (wVar + rVar); // rVar-tVar is exact; wVar+rVar ~= 3*tVar
+	tVar = tVar + (tVar * rVar);       // error <= 0.5 + 0.5/3 + epsilon
+	return tVar;
 }
 #endif
 
@@ -784,4 +1171,321 @@ double tan(double value)
 	n = __rem_pio2(value, result);
 	return __tan(result[0], result[1], (n & 1));
 }
+#endif
+
+// +--------------------------------------------------------------+
+// |                      asin acos and atan                      |
+// +--------------------------------------------------------------+
+#if PIG_WASM_STD_USE_BUILTINS_ASIN_ACOS_ATAN
+inline float asinf(float value)  { return __builtin_asinf(value); }
+inline double asin(double value) { return __builtin_asin(value);  }
+inline float acosf(float value)  { return __builtin_acosf(value); }
+inline double acos(double value) { return __builtin_acos(value);  }
+inline float atanf(float value)  { return __builtin_atanf(value); }
+inline double atan(double value) { return __builtin_atan(value);  }
+#else
+float asinf(float value)
+{
+	double sqrtZ;
+	float zVar;
+	uint32_t wordValue, unsignedValue;
+	
+	GET_FLOAT_WORD(wordValue, value);
+	unsignedValue = wordValue & 0x7FFFFFFF;
+	if (unsignedValue >= 0x3F800000) // |value| >= 1
+	{
+		if (unsignedValue == 0x3F800000) // |value| == 1
+		{
+			return (value * pio2) + 0x1p-120f;  // asin(+-1) = +-pi/2 with inexact
+		}
+		return 0 / (value - value);  // asin(|value|>1) is NaN
+	}
+	if (unsignedValue < 0x3f000000) // |value| < 0.5
+	{
+		// if 0x1p-126 <= |value| < 0x1p-12, avoid raising underflow
+		if (unsignedValue < 0x39800000 && unsignedValue >= 0x00800000) { return value; }
+		return value + value * asinf_helper(value * value);
+	}
+	// 1 > |value| >= 0.5
+	zVar = (1 - fabsf(value)) * 0.5f;
+	sqrtZ = sqrt(zVar);
+	value = pio2 - 2 * (sqrtZ + (sqrtZ * asinf_helper(zVar)));
+	if (wordValue >> 31) { return -value; }
+	return value;
+}
+double asin(double value)
+{
+	double zVar, rVar, sVar;
+	uint32_t highWord, valueUnsigned;
+	
+	GET_HIGH_WORD(highWord, value);
+	valueUnsigned = (highWord & 0x7FFFFFFF);
+	// |value| >= 1 or nan
+	if (valueUnsigned >= 0x3FF00000)
+	{
+		uint32_t lowWord;
+		GET_LOW_WORD(lowWord, value);
+		if (((valueUnsigned - 0x3FF00000) | lowWord) == 0)
+		{
+			// asin(1) = +-pi/2 with inexact
+			return (value * pio2d_hi) + 0x1p-120F;
+		}
+		return 0 / (value - value);
+	}
+	// |value| < 0.5
+	if (valueUnsigned < 0x3FE00000)
+	{
+		// if 0x1p-1022 <= |value| < 0x1p-26, avoid raising underflow
+		if (valueUnsigned < 0x3E500000 && valueUnsigned >= 0x00100000) { return value; }
+		return value + (value * asin_helper(value * value));
+	}
+	// 1 > |value| >= 0.5
+	zVar = (1 - fabs(value)) * 0.5;
+	sVar = sqrt(zVar);
+	rVar = asin_helper(zVar);
+	if (valueUnsigned >= 0x3FEF3333) // if |value| > 0.975
+	{
+		value = pio2d_hi - (2 * (sVar + (sVar * rVar)) - pio2d_lo);
+	}
+	else
+	{
+		double fVar, cVar;
+		// fVar+cVar = sqrt(zVar)
+		fVar = sVar;
+		SET_LOW_WORD(fVar, 0);
+		cVar = (zVar - (fVar * fVar)) / (sVar + fVar);
+		value = (0.5 * pio2d_hi) - ((2 * sVar * rVar) - (pio2d_lo - (2 * cVar)) - ((0.5 * pio2d_hi) - (2 * fVar)));
+	}
+	if (highWord >> 31) { return -value; }
+	return value;
+}
+
+float acosf(float value)
+{
+	float zVar, wVar, sVar, cVar, df;
+	uint32_t valueWord, ix;
+	
+	GET_FLOAT_WORD(valueWord, value);
+	ix = valueWord & 0x7FFFFFFF;
+	// |value| >= 1 or nan
+	if (ix >= 0x3F800000)
+	{
+		if (ix == 0x3F800000)
+		{
+			if (valueWord >> 31) { return (2 * pio2_hi) + 0x1p-120F; }
+			return 0;
+		}
+		return 0 / (value - value);
+	}
+	// |value| < 0.5
+	if (ix < 0x3F000000)
+	{
+		if (ix <= 0x32800000) // |value| < 2**-26
+		{
+			return pio2_hi + 0x1p-120F;
+		}
+		return pio2_hi - (value - (pio2_lo - value * acosf_helper(value * value)));
+	}
+	// value < -0.5
+	if (valueWord >> 31)
+	{
+		zVar = (1 + value) * 0.5f;
+		sVar = sqrtf(zVar);
+		wVar = (acosf_helper(zVar) * sVar) - pio2_lo;
+		return 2 * (pio2_hi - (sVar + wVar));
+	}
+	// value > 0.5
+	zVar = (1 - value) * 0.5f;
+	sVar = sqrtf(zVar);
+	GET_FLOAT_WORD(valueWord, sVar);
+	SET_FLOAT_WORD(df, (valueWord & 0xFFFFF000));
+	cVar = (zVar - (df * df)) / (sVar + df);
+	wVar = (acosf_helper(zVar) * sVar) + cVar;
+	return 2 * (df + wVar);
+}
+double acos(double value)
+{
+	double zVar, wVar, sVar, cVar, df;
+	uint32_t highWord, valueUnsigned;
+	
+	GET_HIGH_WORD(highWord, value);
+	valueUnsigned = (highWord & 0x7FFFFFFF);
+	// |value| >= 1 or nan
+	if (valueUnsigned >= 0x3FF00000)
+	{
+		uint32_t lowWord;
+
+		GET_LOW_WORD(lowWord, value);
+		if (((valueUnsigned - 0x3FF00000) | lowWord) == 0)
+		{
+			// acos(1)=0, acos(-1)=pi
+			if (highWord >> 31) { return (2 * pio2d_hi) + 0x1p-120f; }
+			return 0;
+		}
+		return 0 / (value - value);
+	}
+	// |value| < 0.5
+	if (valueUnsigned < 0x3FE00000)
+	{
+		if (valueUnsigned <= 0x3C600000)  // |value| < 2**-57
+		{
+			return pio2d_hi + 0x1p-120f;
+		}
+		return pio2d_hi - (value - (pio2d_lo - (value * acos_helper(value * value))));
+	}
+	// value < -0.5
+	if (highWord >> 31)
+	{
+		zVar = (1.0 + value) * 0.5;
+		sVar = sqrt(zVar);
+		wVar = (acos_helper(zVar) * sVar) - pio2d_lo;
+		return 2 * (pio2d_hi - (sVar + wVar));
+	}
+	// value > 0.5
+	zVar = (1.0 - value) * 0.5;
+	sVar = sqrt(zVar);
+	df = sVar;
+	SET_LOW_WORD(df, 0);
+	cVar = (zVar - (df * df)) / (sVar + df);
+	wVar = (acos_helper(zVar) * sVar) + cVar;
+	return 2 * (df + wVar);
+}
+
+float atanf(float value)
+{
+	float_t wVar, sVar1, sVar2, zVar;
+	uint32_t valueUnsigned, sign;
+	int index;
+	
+	GET_FLOAT_WORD(valueUnsigned, value);
+	sign = valueUnsigned>>31;
+	valueUnsigned &= 0x7FFFFFFF;
+	if (valueUnsigned >= 0x4C800000) // if |value| >= 2**26
+	{
+		if (isnan(value)) { return value; }
+		zVar = atanhi[3] + 0x1p-120f;
+		return (sign ? -zVar : zVar);
+	}
+	if (valueUnsigned < 0x3EE00000) // |value| < 0.4375
+	{
+		if (valueUnsigned < 0x39800000) // |value| < 2**-12
+		{
+			if (valueUnsigned < 0x00800000)
+			{
+				// raise underflow for subnormal value
+				FORCE_EVAL(value*value);
+			}
+			return value;
+		}
+		index = -1;
+	}
+	else
+	{
+		value = fabsf(value);
+		if (valueUnsigned < 0x3f980000) // |value| < 1.1875
+		{
+			if (valueUnsigned < 0x3f300000) //  7/16 <= |value| < 11/16
+			{
+				index = 0;
+				value = (2.0f*value - 1.0f)/(2.0f + value);
+			}
+			else // 11/16 <= |value| < 19/16
+			{
+				index = 1;
+				value = (value - 1.0f)/(value + 1.0f);
+			}
+		}
+		else
+		{
+			if (valueUnsigned < 0x401c0000) // |value| < 2.4375
+			{
+				index = 2;
+				value = (value - 1.5f)/(1.0f + 1.5f*value);
+			}
+			else // 2.4375 <= |value| < 2**26
+			{
+				index = 3;
+				value = -1.0f/value;
+			}
+		}
+	}
+	// end of argument reduction
+	zVar = value * value;
+	wVar = zVar * zVar;
+	// break sum from i=0 to 10 aT[i]zVar**(i+1) into odd and even poly
+	sVar1 = zVar * (aT[0] + wVar * (aT[2] + wVar * aT[4]));
+	sVar2 = wVar * (aT[1] + wVar * aT[3]);
+	if (index < 0) { return value - value * (sVar1 + sVar2); }
+	zVar = atanhi[index] - ((value * (sVar1 + sVar2) - atanlo[index]) - value);
+	return (sign ? -zVar : zVar);
+}
+double atan(double value)
+{
+	double_t quad, sVar1, sVar2, square;
+	uint32_t valueUnsigned, sign;
+	int index;
+	
+	GET_HIGH_WORD(valueUnsigned, value);
+	sign = (valueUnsigned >> 31);
+	valueUnsigned &= 0x7FFFFFFF;
+	if (valueUnsigned >= 0x44100000) // if |value| >= 2^66
+	{
+		if (isnan(value)) { return value; }
+		square = atanhid[3] + 0x1p-120F;
+		return (sign ? -square : square);
+	}
+	if (valueUnsigned < 0x3FDC0000) // |value| < 0.4375
+	{
+		if (valueUnsigned < 0x3E400000) // |value| < 2^-27
+		{
+			if (valueUnsigned < 0x00100000)
+			{
+				// raise underflow for subnormal value
+				FORCE_EVAL((float)value);
+			}
+			return value;
+		}
+		index = -1;
+	}
+	else
+	{
+		value = fabs(value);
+		if (valueUnsigned < 0x3FF30000) // |value| < 1.1875
+		{
+			if (valueUnsigned < 0x3FE60000) //  7/16 <= |value| < 11/16
+			{
+				index = 0;
+				value = ((2.0 * value) - 1.0) / (2.0 + value);
+			}
+			else // 11/16 <= |value| < 19/16
+			{
+				index = 1;
+				value = (value - 1.0) / (value + 1.0);
+			}
+		}
+		else
+		{
+			if (valueUnsigned < 0x40038000) // |value| < 2.4375
+			{
+				index = 2;
+				value = (value - 1.5) / (1.0 + (1.5 * value));
+			}
+			else // 2.4375 <= |value| < 2^66
+			{
+				index = 3;
+				value = -1.0 / value;
+			}
+		}
+	}
+	// end of argument reduction
+	square = (value * value);
+	quad = (square * square);
+	// break sum from i=0 to 10 aTd[i]square**(i+1) into odd and even poly
+	sVar1 = square * (aTd[0] + quad * (aTd[2] + quad * (aTd[4] + quad * (aTd[6] + quad * (aTd[8] + quad * aTd[10])))));
+	sVar2 = quad * (aTd[1] + quad * (aTd[3] + quad * (aTd[5] + quad * (aTd[7] + quad * aTd[9]))));
+	if (index < 0) { return value - value * (sVar1 + sVar2); }
+	square = atanhid[index] - (value * (sVar1 + sVar2) - atanlod[index] - value);
+	return (sign ? -square : square);
+}
+
 #endif
