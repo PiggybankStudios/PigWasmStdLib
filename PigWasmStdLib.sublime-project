@@ -56,6 +56,7 @@
 			"LDBL_TRUE_MIN",
 			"NAN",
 			"PIG_WASM_STD_USE_BUILTINS_FABS",
+			"PIG_WASM_STD_USE_BUILTINS_FLOOR_CEIL",
 			"PIG_WASM_STD_USE_BUILTINS_FMIN_FMAX",
 			"PIG_WASM_STD_USE_BUILTINS_FMOD",
 			"PIG_WASM_STD_USE_FMIN_FMAX_BUILTINS",
@@ -73,6 +74,7 @@
 		],
 		"custom_functions":
 		[
+			"#define FORCE_EVAL(value)",
 			"#define TestCaseFloat(testCase, expectedValue)",
 			"#define WASM_EXPORTED_FUNC(returnType, functionName, ...)",
 			"#define assert(condition)",
@@ -148,6 +150,8 @@
 			"unsigned __FLOAT_BITS(float value)",
 			"unsigned long long __DOUBLE_BITS(double value)",
 			"void InitWasmMemory(uint32_t numInitialPages)",
+			"void fp_force_eval(double value)",
+			"void fp_force_evalf(float value)",
 			"void free(void* allocPntr)",
 			"void* WasmMemoryAllocate(uint32_t numBytes)",
 			"void* aligned_alloc(size_t numBytes, size_t alignmentSize)",

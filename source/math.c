@@ -10,13 +10,18 @@ Description:
 // |                    Builtin Usage Controls                    |
 // +--------------------------------------------------------------+
 //TODO: Many of these have valid __builtin_ functions but they throw some kind of out of bounds error when executed. Maybe we are using the builtins wrong?
-#define PIG_WASM_STD_USE_BUILTINS_FMIN_FMAX 0
-#define PIG_WASM_STD_USE_BUILTINS_FABS      1
-#define PIG_WASM_STD_USE_BUILTINS_FMOD      0
+#define PIG_WASM_STD_USE_BUILTINS_FMIN_FMAX  0
+#define PIG_WASM_STD_USE_BUILTINS_FABS       1
+#define PIG_WASM_STD_USE_BUILTINS_FMOD       0
+#define PIG_WASM_STD_USE_BUILTINS_ROUND      0
+#define PIG_WASM_STD_USE_BUILTINS_FLOOR_CEIL 1
 
 // +--------------------------------------------------------------+
 // |                        Float Helpers                         |
 // +--------------------------------------------------------------+
+static const float_t tointf = 1/((FLT_EVAL_METHOD == 0) ? FLT_EPSILON : DBL_EPSILON);
+static const float_t tointd = 1/DBL_EPSILON;
+
 int __fpclassifyf(float value)
 {
 	union { float value; uint32_t integer; } valueUnion = { value };
@@ -43,6 +48,17 @@ unsigned long long __DOUBLE_BITS(double value)
 {
 	union { double value; unsigned long long integer; } valueUnion = { value };
 	return valueUnion.integer;
+}
+
+void fp_force_evalf(float value)
+{
+	volatile float volatileValue;
+	volatileValue = value;
+}
+void fp_force_eval(double value)
+{
+	volatile double volatileValue;
+	volatileValue = value;
 }
 
 // +--------------------------------------------------------------+
@@ -262,4 +278,153 @@ double fmod(double numer, double denom)
 	numerUnion.integer = numerInt;
 	return numerUnion.value;
 }
+#endif
+
+// +--------------------------------------------------------------+
+// |                       round and roundf                       |
+// +--------------------------------------------------------------+
+#if PIG_WASM_STD_USE_BUILTINS_ROUND
+inline float roundf(float value) { return __builtin_roundf(value); }
+inline double round(double value) { return __builtin_round(value); }
+#else
+float roundf(float value)
+{
+	union { float value; uint32_t integer; } valueUnion = { value };
+	int valueExponent = ((valueUnion.integer >> 23) & 0xFF);
+	float_t result;
+	
+	if (valueExponent >= 0x7F+23) { return value; }
+	if (valueUnion.integer >> 31) { value = -value; }
+	if (valueExponent < 0x7F-1)
+	{
+		//raise inexact if value!=0 
+		FORCE_EVAL(value + tointf);
+		return 0*valueUnion.value;
+	}
+	result = value + tointf - tointf - value;
+	if (result > 0.5f) { result = result + value - 1; }
+	else if (result <= -0.5f) { result = result + value + 1; }
+	else { result = result + value; }
+	if (valueUnion.integer >> 31) { result = -result; }
+	return result;
+}
+double round(double value)
+{
+	union { double value; uint64_t integer; } valueUnion = { value };
+	int valueExponent = ((valueUnion.integer >> 52) & 0x7FF);
+	double_t result;
+	
+	if (valueExponent >= 0x3FF+52) { return value; }
+	if (valueUnion.integer >> 63) { value = -value; }
+	if (valueExponent < 0x3FF-1)
+	{
+		//raise inexact if value!=0 
+		FORCE_EVAL(value + tointd);
+		return 0 * valueUnion.value;
+	}
+	result = value + tointd - tointd - value;
+	if (result > 0.5) { result = result + value - 1; }
+	else if (result <= -0.5) { result = result + value + 1; }
+	else { result = result + value; }
+	if (valueUnion.integer >> 63) { result = -result; }
+	return result;
+}
+#endif
+
+// +--------------------------------------------------------------+
+// |                        floor and ceil                        |
+// +--------------------------------------------------------------+
+#if PIG_WASM_STD_USE_BUILTINS_FLOOR_CEIL
+inline float _floorf(float value) { return __builtin_floorf(value); }
+inline double _floor(double value) { return __builtin_floor(value); }
+inline float _ceilf(float value) { return __builtin_ceilf(value); }
+inline double _ceil(double value) { return __builtin_ceil(value); }
+#else
+
+float _floorf(float value)
+{
+	union { float value; uint32_t integer; } valueUnion = { value };
+	int valueExponent = (int)((valueUnion.integer >> 23) & 0xFF) - 0x7F;
+	uint32_t temp;
+	
+	if (valueExponent >= 23) { return value; }
+	if (valueExponent >= 0)
+	{
+		temp = (0x007FFFFF >> valueExponent);
+		if ((valueUnion.integer & temp) == 0) { return value; }
+		FORCE_EVAL(value + 0x1p120F);
+		if (valueUnion.integer >> 31) { valueUnion.integer += temp; }
+		valueUnion.integer &= ~temp;
+	}
+	else
+	{
+		FORCE_EVAL(value + 0x1p120F);
+		if (valueUnion.integer >> 31 == 0) { valueUnion.integer = 0; }
+		else if (valueUnion.integer << 1) { valueUnion.value = -1.0; }
+	}
+	return valueUnion.value;
+}
+double _floor(double value)
+{
+	union { double value; uint64_t integer; } valueUnion = { value };
+	int valueExponent = ((valueUnion.integer >> 52) & 0x7FF);
+	double_t result;
+	
+	if (valueExponent >= 0x3FF+52 || value == 0) { return value; }
+	// result = int(value) - value, where int(value) is an integer neighbor of value
+	if (valueUnion.integer >> 63) { result = value - tointd + tointd - value; }
+	else { result = value + tointd - tointd - value; }
+	// special case because of non-nearest rounding modes
+	if (valueExponent <= 0x3FF-1)
+	{
+		FORCE_EVAL(result);
+		return ((valueUnion.integer >> 63) ? -1 : 0);
+	}
+	if (result > 0) { return value + result - 1; }
+	return value + result;
+}
+
+float _ceilf(float value)
+{
+	union { float value; uint32_t integer; } valueUnion = { value };
+	int valueExponent = (int)((valueUnion.integer >> 23) & 0xff) - 0x7f;
+	uint32_t temp;
+	
+	if (valueExponent >= 23) { return value; }
+	if (valueExponent >= 0)
+	{
+		temp = (0x007FFFFF >> valueExponent);
+		if ((valueUnion.integer & temp) == 0) { return value; }
+		FORCE_EVAL(value + 0x1p120F);
+		if (valueUnion.integer >> 31 == 0) { valueUnion.integer += temp; }
+		valueUnion.integer &= ~temp;
+	}
+	else
+	{
+		FORCE_EVAL(value + 0x1p120F);
+		if (valueUnion.integer >> 31) { valueUnion.value = -0.0; }
+		else if (valueUnion.integer << 1) { valueUnion.value = 1.0; }
+	}
+	return valueUnion.value;
+}
+double _ceil(double value)
+{
+	union { double value; uint64_t integer; } valueUnion = { value };
+	int valueExponent = ((valueUnion.integer >> 52) & 0x7FF);
+	double_t temp;
+	
+	if (valueExponent >= 0x3ff+52 || value == 0) { return value; }
+	// temp = int(value) - value, where int(value) is an integer neighbor of value
+	if (valueUnion.integer >> 63) { temp = value - tointd + tointd - value; }
+	else { temp = value + tointd - tointd - value; }
+	// special case because of non-nearest rounding modes
+	if (valueExponent <= 0x3FF-1)
+	{
+		FORCE_EVAL(temp);
+		return ((valueUnion.integer >> 63) ? -0.0 : 1);
+	}
+	if (temp < 0) { return value + temp + 1; }
+	return value + temp;
+}
+
 #endif

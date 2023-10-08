@@ -51,8 +51,13 @@ EXTERN_C_START
 	: __fpclassify(value)                                 \
 )
 
+#define FORCE_EVAL(value) do {                                     \
+	if (sizeof(value) == sizeof(float)) { fp_force_evalf(value); } \
+	else { fp_force_eval(value); }                                 \
+} while(0)
+
 // +--------------------------------------------------------------+
-// |                          Functions                           |
+// |                       Helper Functions                       |
 // +--------------------------------------------------------------+
 int __fpclassifyf(float value);
 int __fpclassify(double value);
@@ -60,6 +65,12 @@ int __fpclassify(double value);
 unsigned __FLOAT_BITS(float value);
 unsigned long long __DOUBLE_BITS(double value);
 
+void fp_force_evalf(float value);
+void fp_force_eval(double value);
+
+// +--------------------------------------------------------------+
+// |                          Functions                           |
+// +--------------------------------------------------------------+
 float  fminf(float value1, float value2);
 double fmin(double value1, double value2);
 
@@ -74,14 +85,20 @@ float  fmodf(float numer, float denom);
 double fmod(double numer, double denom);
 // long double fmodl(long double numer, long double denom);
 
-float  roundf(float value); //TODO: Implement me!
-double round(double value); //TODO: Implement me!
+float  roundf(float value);
+double round(double value);
 
-float  floorf(float value); //TODO: Implement me!
-double floor(double value); //TODO: Implement me!
+//NOTE: clang was shadowing our floor/ceil implementations with it's builtin ones, we're going to route through our functions even if they route to builtins at the end of the day
 
-float  ceilf(float value); //TODO: Implement me!
-double ceil(double value); //TODO: Implement me!
+float  _floorf(float value);
+double _floor(double value);
+#define floorf(value) _floorf(value)
+#define floor(value)  _floor(value)
+
+float  _ceilf(float value);
+double _ceil(double value);
+#define ceilf(value)  _ceilf(value)
+#define ceil(value)   _ceil(value)
 
 float  sinf(float value); //TODO: Implement me!
 double sin(double value); //TODO: Implement me!
@@ -155,10 +172,13 @@ FP_NORMAL
 #define signbit(value)
 #define isnormal(value)
 #define fpclassify(value)
+#define FORCE_EVAL(value)
 int __fpclassifyf(float value)
 int __fpclassify(double value)
 unsigned __FLOAT_BITS(float value)
 unsigned long long __DOUBLE_BITS(double value)
+void fp_force_evalf(float value)
+void fp_force_eval(double value)
 float  fminf(float value1, float value2)
 double fmin(double value1, double value2)
 float  fmaxf(float value1, float value2)

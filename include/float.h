@@ -17,6 +17,7 @@ EXTERN_C_START
 // inline int __flt_rounds() { return FE_TONEAREST; }
 // #define FLT_ROUNDS       (__flt_rounds())
 
+#define FLT_EVAL_METHOD  __FLT_EVAL_METHOD__
 #define FLT_RADIX        2
 
 #define FLT_TRUE_MIN     1.40129846432481707092e-45F

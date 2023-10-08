@@ -94,5 +94,93 @@ void RunMathTestCases()
 	TestCaseDouble(fabs(0.0), 0.0);
 	TestCaseDouble(fabs(-1000000.0001), 1000000.0001);
 	
+	TestCaseFloat(roundf(1.24f), 1.0f);
+	TestCaseFloat(roundf(1.0f), 1.0f);
+	TestCaseFloat(roundf(0.7f), 1.0f);
+	TestCaseFloat(roundf(-1.24f), -1.0f);
+	TestCaseFloat(roundf(-1.0f), -1.0f);
+	TestCaseFloat(roundf(-0.7f), -1.0f);
+	TestCaseFloat(roundf(0.5f), 1.0f);
+	TestCaseFloat(roundf(0.5f - FLT_EPSILON), 0.0f);
+	TestCaseFloat(roundf(-0.5f), -1.0f);
+	TestCaseFloat(roundf(-0.5f + FLT_EPSILON), 0.0f);
+	TestCaseFloat(roundf(INFINITY), INFINITY);
+	TestCaseFloat(roundf(-INFINITY), -INFINITY);
+	TestCaseFloat(roundf(NAN), NAN);
+	
+	TestCaseDouble(round(1.24), 1.0);
+	TestCaseDouble(round(1.0), 1.0);
+	TestCaseDouble(round(0.7), 1.0);
+	TestCaseDouble(round(-1.24), -1.0);
+	TestCaseDouble(round(-1.0), -1.0);
+	TestCaseDouble(round(-0.7), -1.0);
+	TestCaseDouble(round(0.5), 1.0);
+	TestCaseDouble(round(0.5 - DBL_EPSILON), 0.0);
+	TestCaseDouble(round(-0.5), -1.0);
+	TestCaseDouble(round(-0.5 + DBL_EPSILON), 0.0);
+	TestCaseDouble(round(INFINITY), INFINITY);
+	TestCaseDouble(round(-INFINITY), -INFINITY);
+	TestCaseDouble(round(NAN), NAN);
+	
+	TestCaseFloat(floorf(1.0f), 1.0f);
+	TestCaseFloat(floorf(2.0f), 2.0f);
+	TestCaseFloat(floorf(1.001f), 1.0f);
+	TestCaseFloat(floorf(1.24f), 1.0f);
+	TestCaseFloat(floorf(1.99f), 1.0f);
+	TestCaseFloat(floorf(-1.0f), -1.0f);
+	TestCaseFloat(floorf(-2.0f), -2.0f);
+	TestCaseFloat(floorf(-1.001f), -2.0f);
+	TestCaseFloat(floorf(-1.24f), -2.0f);
+	TestCaseFloat(floorf(-1.99f), -2.0f);
+	TestCaseFloat(floorf(1024.5f), 1024.0f);
+	TestCaseFloat(floorf(INFINITY), INFINITY);
+	TestCaseFloat(floorf(-INFINITY), -INFINITY);
+	TestCaseFloat(floorf(NAN), NAN);
+	
+	TestCaseDouble(floor(1.0), 1.0);
+	TestCaseDouble(floor(2.0), 2.0);
+	TestCaseDouble(floor(1.001), 1.0);
+	TestCaseDouble(floor(1.24), 1.0);
+	TestCaseDouble(floor(1.99), 1.0);
+	TestCaseDouble(floor(-1.0), -1.0);
+	TestCaseDouble(floor(-2.0), -2.0);
+	TestCaseDouble(floor(-1.001), -2.0);
+	TestCaseDouble(floor(-1.24), -2.0);
+	TestCaseDouble(floor(-1.99), -2.0);
+	TestCaseDouble(floor(1024.5), 1024.0);
+	TestCaseDouble(floor(INFINITY), INFINITY);
+	TestCaseDouble(floor(-INFINITY), -INFINITY);
+	TestCaseDouble(floor(NAN), NAN);
+	
+	TestCaseFloat(ceilf(1.0f), 1.0f);
+	TestCaseFloat(ceilf(2.0f), 2.0f);
+	TestCaseFloat(ceilf(1.001f), 2.0f);
+	TestCaseFloat(ceilf(1.24f), 2.0f);
+	TestCaseFloat(ceilf(1.99f), 2.0f);
+	TestCaseFloat(ceilf(-1.0f), -1.0f);
+	TestCaseFloat(ceilf(-2.0f), -2.0f);
+	TestCaseFloat(ceilf(-1.001f), -1.0f);
+	TestCaseFloat(ceilf(-1.24f), -1.0f);
+	TestCaseFloat(ceilf(-1.99f), -1.0f);
+	TestCaseFloat(ceilf(1024.5f), 1025.0f);
+	TestCaseFloat(ceilf(INFINITY), INFINITY);
+	TestCaseFloat(ceilf(-INFINITY), -INFINITY);
+	TestCaseFloat(ceilf(NAN), NAN);
+	
+	TestCaseDouble(ceil(1.0), 1.0);
+	TestCaseDouble(ceil(2.0), 2.0);
+	TestCaseDouble(ceil(1.001), 2.0);
+	TestCaseDouble(ceil(1.24), 2.0);
+	TestCaseDouble(ceil(1.99), 2.0);
+	TestCaseDouble(ceil(-1.0), -1.0);
+	TestCaseDouble(ceil(-2.0), -2.0);
+	TestCaseDouble(ceil(-1.001), -1.0);
+	TestCaseDouble(ceil(-1.24), -1.0);
+	TestCaseDouble(ceil(-1.99), -1.0);
+	TestCaseDouble(ceil(1024.5), 1025.0);
+	TestCaseDouble(ceil(INFINITY), INFINITY);
+	TestCaseDouble(ceil(-INFINITY), -INFINITY);
+	TestCaseDouble(ceil(NAN), NAN);
+	
 	jsPrintNumber("Ran Math Tests", numCases);
 }
