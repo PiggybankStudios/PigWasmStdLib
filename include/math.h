@@ -66,13 +66,13 @@ double fmin(double value1, double value2);
 float  fmaxf(float value1, float value2);
 double fmax(double value1, double value2);
 
-float       fabsf(float value); //TODO: Implement me!
-double      fabs(double value); //TODO: Implement me!
-long double fabsl(long double value); //TODO: Implement me!
+float  fabsf(float value);
+double fabs(double value);
+// long double fabsl(long double value);
 
-float       fmodf(float numer, float denom); //TODO: Implement me!
-double      fmod(double numer, double denom); //TODO: Implement me!
-long double fmodl(long double numer, long double denom); //TODO: Implement me!
+float  fmodf(float numer, float denom);
+double fmod(double numer, double denom);
+// long double fmodl(long double numer, long double denom);
 
 float  roundf(float value); //TODO: Implement me!
 double round(double value); //TODO: Implement me!
@@ -125,13 +125,13 @@ double log10(double value); //TODO: Implement me!
 double ldexp(double value, int exponent); //TODO: Implement me!
 float  ldexpf(float value, int exponent); //TODO: Implement me!
 
-float       scalbnf(float value, int power); //TODO: Implement me!
-double      scalbn(double value, int power); //TODO: Implement me!
-long double scalbnl(long double value, int power); //TODO: Implement me!
+float  scalbnf(float value, int power); //TODO: Implement me!
+double scalbn(double value, int power); //TODO: Implement me!
+// long double scalbnl(long double value, int power);
 
-float       copysignf(float magnitude, float sign); //TODO: Implement me!
-double      copysign(double magnitude, double sign); //TODO: Implement me!
-long double copysignl(long double magnitude, long double sign); //TODO: Implement me!
+float  copysignf(float magnitude, float sign); //TODO: Implement me!
+double copysign(double magnitude, double sign); //TODO: Implement me!
+// long double copysignl(long double magnitude, long double sign);
 
 EXTERN_C_END
 
@@ -163,12 +163,10 @@ float  fminf(float value1, float value2)
 double fmin(double value1, double value2)
 float  fmaxf(float value1, float value2)
 double fmax(double value1, double value2)
-float       fabsf(float value)
-double      fabs(double value)
-long double fabsl(long double value)
-float       fmodf(float numer, float denom)
-double      fmod(double numer, double denom)
-long double fmodl(long double numer, long double denom)
+float  fabsf(float value)
+double fabs(double value)
+float  fmodf(float numer, float denom)
+double fmod(double numer, double denom)
 float  roundf(float value)
 double round(double value)
 float  floorf(float value)
@@ -203,10 +201,8 @@ float  log10f(float value)
 double log10(double value)
 double ldexp(double value, int exponent)
 float  ldexpf(float value, int exponent)
-float       scalbnf(float value, int power)
-double      scalbn(double value, int power)
-long double scalbnl(long double value, int power)
-float       copysignf(float magnitude, float sign)
-double      copysign(double magnitude, double sign)
-long double copysignl(long double magnitude, long double sign)
+float  scalbnf(float value, int power)
+double scalbn(double value, int power)
+float  copysignf(float magnitude, float sign)
+double copysign(double magnitude, double sign)
 */
