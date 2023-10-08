@@ -23,6 +23,20 @@ EXTERN_C_START
 #define FP_SUBNORMAL 3
 #define FP_NORMAL    4
 
+#define M_E             2.7182818284590452354   // e
+#define M_LOG2E         1.4426950408889634074   // log_2 e
+#define M_LOG10E        0.43429448190325182765  // log_10 e
+#define M_LN2           0.69314718055994530942  // log_e 2
+#define M_LN10          2.30258509299404568402  // log_e 10
+#define M_PI            3.14159265358979323846  // pi
+#define M_PI_2          1.57079632679489661923  // pi/2
+#define M_PI_4          0.78539816339744830962  // pi/4
+#define M_1_PI          0.31830988618379067154  // 1/pi
+#define M_2_PI          0.63661977236758134308  // 2/pi
+#define M_2_SQRTPI      1.12837916709551257390  // 2/sqrt(pi)
+#define M_SQRT2         1.41421356237309504880  // sqrt(2)
+#define M_SQRT1_2       0.70710678118654752440  // 1/sqrt(2)
+
 // +--------------------------------------------------------------+
 // |                            Macros                            |
 // +--------------------------------------------------------------+
@@ -55,6 +69,23 @@ EXTERN_C_START
 	if (sizeof(value) == sizeof(float)) { fp_force_evalf(value); } \
 	else { fp_force_eval(value); }                                 \
 } while(0)
+
+#define asuint(value)   ((union { float    _value; uint32_t _integer; }){ value })._integer
+#define asfloat(value)  ((union { uint32_t _value; float    _float;   }){ value })._float
+#define asuint64(value) ((union { double   _value; uint64_t _integer; }){ value })._integer
+#define asdouble(value) ((union { uint64_t _value; double   _double;  }){ value })._double
+
+#define INSERT_WORDS(doubleVar, highWord, lowWord) do { (doubleVar) = asdouble(((uint64_t)(highWord)<<32) | (uint32_t)(lowWord)); } while (0)
+#define GET_HIGH_WORD(wordVar, value) do { (wordVar) = asuint64(value) >> 32; } while (0)
+#define GET_LOW_WORD(wordVar, value)  do { (wordVar) = (uint32_t)asuint64(value); } while (0)
+#define SET_HIGH_WORD(doubleVar, wordValue) INSERT_WORDS(doubleVar, wordValue, (uint32_t)asuint64(doubleVar))
+#define SET_LOW_WORD(doubleVar, wordValue)  INSERT_WORDS(doubleVar, asuint64(doubleVar)>>32, wordValue)
+#define GET_FLOAT_WORD(wordVar, value)  do { (wordVar)  = asuint(value);  } while (0)
+#define SET_FLOAT_WORD(floatVar, value) do { (floatVar) = asfloat(value); } while (0)
+
+// Helps static branch prediction so hot path can be better optimized.
+#define predict_true(condition) __builtin_expect(!!(condition), 1)
+#define predict_false(condition) __builtin_expect(condition, 0)
 
 // +--------------------------------------------------------------+
 // |                       Helper Functions                       |
@@ -100,20 +131,28 @@ double _ceil(double value);
 #define ceilf(value)  _ceilf(value)
 #define ceil(value)   _ceil(value)
 
-float  sinf(float value); //TODO: Implement me!
-double sin(double value); //TODO: Implement me!
+//NOTE: same shadowing issue as floor/ceil
+
+float  _scalbnf(float value, int power);
+double _scalbn(double value, int power);
+// long double _scalbnl(long double value, int power);
+#define scalbnf(value, power) _scalbnf(value, power)
+#define scalbn(value, power)  _scalbn(value, power)
+
+float  sinf(float value);
+double sin(double value);
+
+float  cosf(float value);
+double cos(double value);
+
+float  tanf(float value);
+double tan(double value);
 
 float  asinf(float value); //TODO: Implement me!
 double asin(double value); //TODO: Implement me!
 
-float  cosf(float value); //TODO: Implement me!
-double cos(double value); //TODO: Implement me!
-
 float  acosf(float value); //TODO: Implement me!
 double acos(double value); //TODO: Implement me!
-
-float  tanf(float value); //TODO: Implement me!
-double tan(double value); //TODO: Implement me!
 
 float  atanf(float value); //TODO: Implement me!
 double atan(double value); //TODO: Implement me!
@@ -142,10 +181,6 @@ double log10(double value); //TODO: Implement me!
 double ldexp(double value, int exponent); //TODO: Implement me!
 float  ldexpf(float value, int exponent); //TODO: Implement me!
 
-float  scalbnf(float value, int power); //TODO: Implement me!
-double scalbn(double value, int power); //TODO: Implement me!
-// long double scalbnl(long double value, int power);
-
 float  copysignf(float magnitude, float sign); //TODO: Implement me!
 double copysign(double magnitude, double sign); //TODO: Implement me!
 // long double copysignl(long double magnitude, long double sign);
@@ -166,6 +201,19 @@ FP_INFINITE
 FP_ZERO
 FP_SUBNORMAL
 FP_NORMAL
+M_E
+M_LOG2E
+M_LOG10E
+M_LN2
+M_LN10
+M_PI
+M_PI_2
+M_PI_4
+M_1_PI
+M_2_PI
+M_2_SQRTPI
+M_SQRT2
+M_SQRT1_2
 @Functions
 #define isinf(value)
 #define isnan(value)
@@ -173,6 +221,19 @@ FP_NORMAL
 #define isnormal(value)
 #define fpclassify(value)
 #define FORCE_EVAL(value)
+#define asuint(value)
+#define asfloat(value)
+#define asuint64(value)
+#define asdouble(value)
+#define INSERT_WORDS(doubleVar, highWord, lowWord)
+#define GET_HIGH_WORD(wordVar, value)
+#define GET_LOW_WORD(wordVar, value)
+#define SET_HIGH_WORD(doubleVar, wordValue)
+#define SET_LOW_WORD(doubleVar, wordValue)
+#define GET_FLOAT_WORD(wordVar, value)
+#define SET_FLOAT_WORD(floatVar, value)
+#define predict_true(condition)
+#define predict_false(condition)
 int __fpclassifyf(float value)
 int __fpclassify(double value)
 unsigned __FLOAT_BITS(float value)
@@ -193,6 +254,8 @@ float  floorf(float value)
 double floor(double value)
 float  ceilf(float value)
 double ceil(double value)
+float  scalbnf(float value, int power)
+double scalbn(double value, int power)
 float  sinf(float value)
 double sin(double value)
 float  asinf(float value)
@@ -221,8 +284,6 @@ float  log10f(float value)
 double log10(double value)
 double ldexp(double value, int exponent)
 float  ldexpf(float value, int exponent)
-float  scalbnf(float value, int power)
-double scalbn(double value, int power)
 float  copysignf(float magnitude, float sign)
 double copysign(double magnitude, double sign)
 */

@@ -10,11 +10,13 @@ Description:
 // |                    Builtin Usage Controls                    |
 // +--------------------------------------------------------------+
 //TODO: Many of these have valid __builtin_ functions but they throw some kind of out of bounds error when executed. Maybe we are using the builtins wrong?
-#define PIG_WASM_STD_USE_BUILTINS_FMIN_FMAX  0
-#define PIG_WASM_STD_USE_BUILTINS_FABS       1
-#define PIG_WASM_STD_USE_BUILTINS_FMOD       0
-#define PIG_WASM_STD_USE_BUILTINS_ROUND      0
-#define PIG_WASM_STD_USE_BUILTINS_FLOOR_CEIL 1
+#define PIG_WASM_STD_USE_BUILTINS_FMIN_FMAX   0
+#define PIG_WASM_STD_USE_BUILTINS_FABS        1
+#define PIG_WASM_STD_USE_BUILTINS_FMOD        0
+#define PIG_WASM_STD_USE_BUILTINS_ROUND       0
+#define PIG_WASM_STD_USE_BUILTINS_FLOOR_CEIL  1
+#define PIG_WASM_STD_USE_BUILTINS_SCALBN      0
+#define PIG_WASM_STD_USE_BUILTINS_SIN_COS_TAN 0
 
 // +--------------------------------------------------------------+
 // |                        Float Helpers                         |
@@ -427,4 +429,359 @@ double _ceil(double value)
 	return value + temp;
 }
 
+#endif
+
+// +--------------------------------------------------------------+
+// |                      scalbn and scalbnf                      |
+// +--------------------------------------------------------------+
+#if PIG_WASM_STD_USE_BUILTINS_SCALBN
+inline float _scalbnf(float value, int power)  { jsPrintString("Called scalbnf"); return __builtin_scalbnf(value, power); }
+inline double _scalbn(double value, int power) { jsPrintString("Called scalbn"); return __builtin_scalbn(value,  power); }
+#else
+float _scalbnf(float value, int power)
+{
+	union { float value; uint32_t integer; } valueUnion;
+	float_t result = value;
+	
+	if (power > 127)
+	{
+		result *= 0x1p127F;
+		power -= 127;
+		if (power > 127)
+		{
+			result *= 0x1p127F;
+			power -= 127;
+			if (power > 127) { power = 127; }
+		}
+	}
+	else if (power < -126)
+	{
+		result *= 0x1p-126F * 0x1p24F;
+		power += 126 - 24;
+		if (power < -126)
+		{
+			result *= 0x1p-126F * 0x1p24F;
+			power += 126 - 24;
+			if (power < -126) { power = -126; }
+		}
+	}
+	valueUnion.integer = ((uint32_t)(0x7F + power) << 23);
+	result = result * valueUnion.value;
+	return result;
+}
+double _scalbn(double value, int power)
+{
+	union { double value; uint64_t integer; } valueUnion;
+	double_t result = value;
+	
+	if (power > 1023)
+	{
+		result *= 0x1p1023;
+		power -= 1023;
+		if (power > 1023)
+		{
+			result *= 0x1p1023;
+			power -= 1023;
+			if (power > 1023) { power = 1023; }
+		}
+	}
+	else if (power < -1022)
+	{
+		// make sure final power < -53 to avoid double
+		// rounding in the subnormal range
+		result *= 0x1p-1022 * 0x1p53;
+		power += 1022 - 53;
+		if (power < -1022)
+		{
+			result *= 0x1p-1022 * 0x1p53;
+			power += 1022 - 53;
+			if (power < -1022) { power = -1022; }
+		}
+	}
+	valueUnion.integer = ((uint64_t)(0x3FF + power) << 52);
+	result = result * valueUnion.value;
+	return result;
+}
+#endif
+
+// +--------------------------------------------------------------+
+// |                       sin cos and tan                        |
+// +--------------------------------------------------------------+
+#if PIG_WASM_STD_USE_BUILTINS_SIN_COS_TAN
+inline float sinf(float value)  { return __builtin_sinf(value); }
+inline double sin(double value) { return __builtin_sin(value);  }
+inline float cosf(float value)  { return __builtin_cosf(value); }
+inline double cos(double value) { return __builtin_cos(value);  }
+inline float tanf(float value)  { return __builtin_tanf(value); }
+inline double tan(double value) { return __builtin_tan(value);  }
+#else
+
+#include "math_trig_helpers.c"
+
+// Small multiples of pi/2 rounded to double precision.
+static const double
+	pio2_1x = 1*M_PI_2, // 0x3FF921FB, 0x54442D18
+	pio2_2x = 2*M_PI_2, // 0x400921FB, 0x54442D18
+	pio2_3x = 3*M_PI_2, // 0x4012D97C, 0x7F3321D2
+	pio2_4x = 4*M_PI_2; // 0x401921FB, 0x54442D18
+
+float sinf(float value)
+{
+	double result;
+	uint32_t invValue;
+	int temp, sign;
+	
+	GET_FLOAT_WORD(invValue, value);
+	sign = (invValue >> 31);
+	invValue &= 0x7FFFFFFF;
+	
+	if (invValue <= 0x3F490FDA) // |value| ~<= pi/4
+	{
+		if (invValue < 0x39800000) // |value| < 2**-12
+		{
+			// raise inexact if value!=0 and underflow if subnormal
+			FORCE_EVAL((invValue < 0x00800000) ? value / 0x1p120F : value + 0x1p120F);
+			return value;
+		}
+		return __sindf(value);
+	}
+	if (invValue <= 0x407B53D1) // |value| ~<= 5*pi/4
+	{
+		if (invValue <= 0x4016CBE3) // |value| ~<= 3pi/4
+		{
+			if (sign) { return -__cosdf(value + pio2_1x); }
+			else { return __cosdf(value - pio2_1x); }
+		}
+		return __sindf(sign ? -(value + pio2_2x) : -(value - pio2_2x));
+	}
+	if (invValue <= 0x40E231D5) // |value| ~<= 9*pi/4
+	{
+		if (invValue <= 0x40AFEDDF) // |value| ~<= 7*pi/4
+		{
+			if (sign) { return __cosdf(value + pio2_3x); }
+			else { return -__cosdf(value - pio2_3x); }
+		}
+		return __sindf(sign ? value + pio2_4x : value - pio2_4x);
+	}
+	
+	// sin(Inf or NaN) is NaN
+	if (invValue >= 0x7F800000) { return value - value; }
+	
+	// general argument reduction needed
+	temp = __rem_pio2f(value, &result);
+	switch (temp & 3)
+	{
+		case 0:  return  __sindf(result);
+		case 1:  return  __cosdf(result);
+		case 2:  return  __sindf(-result);
+		default: return -__cosdf(result);
+	}
+}
+double sin(double value)
+{
+	double result[2];
+	uint32_t highWord;
+	unsigned n; //TODO: give this a better name
+	
+	// High word of value.
+	GET_HIGH_WORD(highWord, value);
+	highWord &= 0x7FFFFFFF;
+	
+	// |value| ~< pi/4
+	if (highWord <= 0x3FE921FB)
+	{
+		if (highWord < 0x3e500000) // |value| < 2**-26
+		{
+			// raise inexact if value != 0 and underflow if subnorma
+			FORCE_EVAL((highWord < 0x00100000) ? value / 0x1p120f : value + 0x1p120f);
+			return value;
+		}
+		return __sin(value, 0.0, 0);
+	}
+	
+	// sin(Inf or NaN) is NaN
+	if (highWord >= 0x7ff00000) { return value - value; }
+	
+	// argument reduction needed
+	n = __rem_pio2(value, result);
+	switch (n&3)
+	{
+		case 0:  return  __sin(result[0], result[1], 1);
+		case 1:  return  __cos(result[0], result[1]);
+		case 2:  return -__sin(result[0], result[1], 1);
+		default: return -__cos(result[0], result[1]);
+	}
+}
+
+float cosf(float value)
+{
+	double result;
+	uint32_t valueWord;
+	unsigned n, sign; //TODO: give this a better name
+
+	GET_FLOAT_WORD(valueWord, value);
+	sign = valueWord >> 31;
+	valueWord &= 0x7FFFFFFF;
+
+	if (valueWord <= 0x3F490FDA) // |value| ~<= pi/4
+	{
+		if (valueWord < 0x39800000) // |value| < 2**-12
+		{
+			// raise inexact if value != 0
+			FORCE_EVAL(value + 0x1p120F);
+			return 1.0f;
+		}
+		return __cosdf(value);
+	}
+	if (valueWord <= 0x407B53D1) // |value| ~<= 5*pi/4
+	{
+		if (valueWord > 0x4016CBE3) // |value|  ~> 3*pi/4
+		{
+			return -__cosdf(sign ? value+pio2_2x : value-pio2_2x);
+		}
+		else
+		{
+			if (sign) { return __sindf(value + pio2_1x); }
+			else { return __sindf(pio2_1x - value); }
+		}
+	}
+	if (valueWord <= 0x40E231D5) // |value| ~<= 9*pi/4
+	{
+		if (valueWord > 0x40AFEDDF) // |value| ~> 7*pi/4
+		{
+			return __cosdf(sign ? value+pio2_4x : value-pio2_4x);
+		}
+		else
+		{
+			if (sign) { return __sindf(-value - pio2_3x); }
+			else { return __sindf(value - pio2_3x); }
+		}
+	}
+
+	// cos(Inf or NaN) is NaN
+	if (valueWord >= 0x7F800000) { return value-value; }
+
+	// general argument reduction needed
+	n = __rem_pio2f(value, &result);
+	switch (n & 3)
+	{
+		case 0:  return  __cosdf(result);
+		case 1:  return  __sindf(-result);
+		case 2:  return -__cosdf(result);
+		default: return  __sindf(result);
+	}
+}
+double cos(double value)
+{
+	double result[2];
+	uint32_t highWord;
+	unsigned n; //TODO: give this a better name
+
+	GET_HIGH_WORD(highWord, value);
+	highWord &= 0x7FFFFFFF;
+
+	// |value| ~< pi/4
+	if (highWord <= 0x3FE921FB)
+	{
+		if (highWord < 0x3E46A09E) // |value| < 2**-27 * sqrt(2)
+		{
+			// raise inexact if value!=0
+			FORCE_EVAL(value + 0x1p120F);
+			return 1.0;
+		}
+		return __cos(value, 0);
+	}
+
+	// cos(Inf or NaN) is NaN
+	if (highWord >= 0x7FF00000) { return (value - value); }
+
+	// argument reduction
+	n = __rem_pio2(value, result);
+	switch (n & 3)
+	{
+		case 0: return  __cos(result[0], result[1]);
+		case 1: return -__sin(result[0], result[1], 1);
+		case 2: return -__cos(result[0], result[1]);
+		default: return  __sin(result[0], result[1], 1);
+	}
+}
+
+float tanf(float value)
+{
+	double result;
+	uint32_t valueWord;
+	unsigned n, sign; //TODO: give this a better name
+	
+	GET_FLOAT_WORD(valueWord, value);
+	sign = (valueWord >> 31);
+	valueWord &= 0x7FFFFFFF;
+	
+	if (valueWord <= 0x3F490FDA) // |value| ~<= pi/4
+	{
+		if (valueWord < 0x39800000) // |value| < 2**-12
+		{
+			// raise inexact if value!=0 and underflow if subnormal
+			FORCE_EVAL((valueWord < 0x00800000) ? value / 0x1p120F : value + 0x1p120F);
+			return value;
+		}
+		return __tandf(value, 0);
+	}
+	if (valueWord <= 0x407B53D1) // |value| ~<= 5*pi/4
+	{
+		if (valueWord <= 0x4016CBE3) // |value| ~<= 3pi/4
+		{
+			return __tandf((sign ? value + pio2_1x : value - pio2_1x), 1);
+		}
+		else
+		{
+			return __tandf((sign ? value + pio2_2x : value - pio2_2x), 0);
+		}
+	}
+	if (valueWord <= 0x40E231D5) // |value| ~<= 9*pi/4
+	{
+		if (valueWord <= 0x40AFEDDF) // |value| ~<= 7*pi/4
+		{
+			return __tandf((sign ? value + pio2_3x : value - pio2_3x), 1);
+		}
+		else
+		{
+			return __tandf((sign ? value + pio2_4x : value - pio2_4x), 0);
+		}
+	}
+	
+	// tan(Inf or NaN) is NaN
+	if (valueWord >= 0x7F800000) { return (value - value); }
+	
+	// argument reduction
+	n = __rem_pio2f(value, &result);
+	return __tandf(result, (n & 1));
+}
+double tan(double value)
+{
+	double result[2];
+	uint32_t highWord;
+	unsigned n; //TODO: give this a better name
+
+	GET_HIGH_WORD(highWord, value);
+	highWord &= 0x7FFFFFFF;
+
+	// |value| ~< pi/4
+	if (highWord <= 0x3FE921FB)
+	{
+		if (highWord < 0x3E400000) // |value| < 2**-27
+		{
+			// raise inexact if value!=0 and underflow if subnormal
+			FORCE_EVAL((highWord < 0x00100000) ? value / 0x1p120F : value + 0x1p120F);
+			return value;
+		}
+		return __tan(value, 0.0, 0);
+	}
+
+	// tan(Inf or NaN) is NaN
+	if (highWord >= 0x7FF00000) { return (value - value); }
+
+	// argument reduction
+	n = __rem_pio2(value, result);
+	return __tan(result[0], result[1], (n & 1));
+}
 #endif
