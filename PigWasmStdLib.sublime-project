@@ -74,6 +74,7 @@
 			"PIG_WASM_STD_USE_BUILTINS_FLOOR_CEIL",
 			"PIG_WASM_STD_USE_BUILTINS_FMIN_FMAX",
 			"PIG_WASM_STD_USE_BUILTINS_FMOD",
+			"PIG_WASM_STD_USE_BUILTINS_POW",
 			"PIG_WASM_STD_USE_BUILTINS_SIN_COS_TAN",
 			"PIG_WASM_STD_USE_BUILTINS_SQRT",
 			"PIG_WASM_STD_USE_FMIN_FMAX_BUILTINS",
@@ -91,6 +92,7 @@
 		],
 		"custom_functions":
 		[
+			"#define EXTRACT_WORDS(highWord, lowWord, value)",
 			"#define FORCE_EVAL(value)",
 			"#define GET_FLOAT_WORD(wordVar, value)",
 			"#define GET_HIGH_WORD(wordVar, value)",
@@ -121,6 +123,7 @@
 			"WASM_IMPORTED_FUNC void jsPrintString(const char* strPntr)",
 			"WASM_IMPORTED_FUNC void jsTestFunction()",
 			"async function PigWasm_Init(wasmMemory, wasmFilePath)",
+			"double __math_divzero(uint32_t sign)",
 			"double __math_invalid(double value)",
 			"double acos(double value)",
 			"double asin(double value)",
@@ -181,6 +184,7 @@
 			"long double fabsl(long double value)",
 			"long double fmodl(long double numer, long double denom)",
 			"long double scalbnl(long double value, int power)",
+			"uint32_t top16(double x)",
 			"unsigned __FLOAT_BITS(float value)",
 			"unsigned long long __DOUBLE_BITS(double value)",
 			"void InitWasmMemory(uint32_t numInitialPages)",

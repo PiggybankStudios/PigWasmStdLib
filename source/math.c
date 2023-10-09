@@ -20,6 +20,8 @@ Description:
 #define PIG_WASM_STD_USE_BUILTINS_CBRT           0
 #define PIG_WASM_STD_USE_BUILTINS_SIN_COS_TAN    0
 #define PIG_WASM_STD_USE_BUILTINS_ASIN_ACOS_ATAN 0
+#define PIG_WASM_STD_USE_BUILTINS_POW            0
+#define PIG_WASM_STD_USE_BUILTINS_LOG            0
 
 // +--------------------------------------------------------------+
 // |                        Float Helpers                         |
@@ -122,6 +124,22 @@ const uint16_t __rsqrt_table[128] = {
 };
 
 #endif
+
+float __math_divzerof(uint32_t sign)
+{
+	//TODO: This used to have an fp_barrierf call around the numerator. Do we need that in WASM?
+	return (sign ? -1.0f : 1.0f) / 0.0f;
+}
+double __math_divzero(uint32_t sign)
+{
+	//TODO: This used to have an fp_barrier call around the numerator. Do we need that in WASM?
+	return (sign ? -1.0 : 1.0) / 0.0;
+}
+
+uint32_t top16(double x)
+{
+	return asuint64(x) >> 48;
+}
 
 // +--------------------------------------------------------------+
 // |                        fmin and fmax                         |
@@ -1174,15 +1192,17 @@ double tan(double value)
 #endif
 
 // +--------------------------------------------------------------+
-// |                      asin acos and atan                      |
+// |                   asin acos atan and atan2                   |
 // +--------------------------------------------------------------+
 #if PIG_WASM_STD_USE_BUILTINS_ASIN_ACOS_ATAN
-inline float asinf(float value)  { return __builtin_asinf(value); }
-inline double asin(double value) { return __builtin_asin(value);  }
-inline float acosf(float value)  { return __builtin_acosf(value); }
-inline double acos(double value) { return __builtin_acos(value);  }
-inline float atanf(float value)  { return __builtin_atanf(value); }
-inline double atan(double value) { return __builtin_atan(value);  }
+inline float asinf(float value)                 { return __builtin_asinf(value);         }
+inline double asin(double value)                { return __builtin_asin(value);          }
+inline float acosf(float value)                 { return __builtin_acosf(value);         }
+inline double acos(double value)                { return __builtin_acos(value);          }
+inline float atanf(float value)                 { return __builtin_atanf(value);         }
+inline double atan(double value)                { return __builtin_atan(value);          }
+inline float atan2f(float numer,  float denom)  { return __builtin_atan2f(numer, denom); }
+inline double atan2(double numer, double denom) { return __builtin_atan2(numer,  denom); }
 #else
 float asinf(float value)
 {
@@ -1488,4 +1508,292 @@ double atan(double value)
 	return (sign ? -square : square);
 }
 
+float atan2f(float numer, float denom)
+{
+	float zVar;
+	uint32_t index, denomWord, numerWord;
+
+	if (isnan(denom) || isnan(numer)) { return (denom + numer); }
+	GET_FLOAT_WORD(denomWord, denom);
+	GET_FLOAT_WORD(numerWord, numer);
+	if (denomWord == 0x3F800000) { return atanf(numer); } // denom=1.0
+	index = ((numerWord >> 31) & 1) | ((denomWord >> 30) & 2);  // 2*sign(denom)+sign(numer)
+	denomWord &= 0x7FFFFFFF;
+	numerWord &= 0x7FFFFFFF;
+
+	// when numer = 0
+	if (numerWord == 0)
+	{
+		switch (index)
+		{
+			case 0:
+			case 1: return numer; // atan(+-0,+anything)=+-0
+			case 2: return  pi;   // atan(+0,-anything) = pi
+			case 3: return -pi;   // atan(-0,-anything) =-pi
+		}
+	}
+	// when denom = 0
+	if (denomWord == 0) { return (index & 1) ? -pi/2 : pi/2; }
+	// when denom is INF
+	if (denomWord == 0x7F800000)
+	{
+		if (numerWord == 0x7F800000)
+		{
+			switch (index)
+			{
+				case 0: return  pi/4;   // atan(+INF,+INF)
+				case 1: return -pi/4;   // atan(-INF,+INF)
+				case 2: return 3*pi/4;  // atan(+INF,-INF)
+				case 3: return -3*pi/4; // atan(-INF,-INF)
+			}
+		}
+		else
+		{
+			switch (index)
+			{
+				case 0: return  0.0f;    // atan(+...,+INF)
+				case 1: return -0.0f;    // atan(-...,+INF)
+				case 2: return  pi; // atan(+...,-INF)
+				case 3: return -pi; // atan(-...,-INF)
+			}
+		}
+	}
+	// |numer/denom| > 0x1p26
+	if (denomWord + (26 << 23) < numerWord || numerWord == 0x7F800000)
+	{
+		return (index &1) ? -pi/2 : pi/2;
+	}
+
+	// zVar = atan(|numer/denom|) with correct underflow
+	if ((index & 2) && numerWord + (26 << 23) < denomWord)  //|numer/denom| < 0x1p-26, denom < 0
+	{
+		zVar = 0.0;
+	}
+	else
+	{
+		zVar = atanf(fabsf(numer / denom));
+	}
+	switch (index)
+	{
+		case 0:  return zVar;              // atan(+,+)
+		case 1:  return -zVar;             // atan(-,+)
+		case 2:  return pi - (zVar-pi_lo); // atan(+,-)
+		default: return (zVar-pi_lo) - pi; // atan(-,-)
+	}
+}
+double atan2(double numer, double denom)
+{
+	double zVar;
+	uint32_t index, denomLow, numerLow, denomHigh, numerHigh;
+	
+	if (isnan(denom) || isnan(numer)) { return denom+numer; }
+	EXTRACT_WORDS(denomHigh, denomLow, denom);
+	EXTRACT_WORDS(numerHigh, numerLow, numer);
+	if ((denomHigh-0x3FF00000 | denomLow) == 0) { return atan(numer); } // denom = 1.0
+	index = ((numerHigh >> 31) & 1) | ((denomHigh >> 30) & 2); // 2*sign(denom)+sign(numer)
+	denomHigh = (denomHigh & 0x7FFFFFFF);
+	numerHigh = (numerHigh & 0x7FFFFFFF);
+	
+	// when numer = 0
+	if ((numerHigh|numerLow) == 0)
+	{
+		switch(index)
+		{
+			case 0:
+			case 1: return numer;   // atan(+-0,+anything)=+-0
+			case 2: return  pi; // atan(+0,-anything) = pi
+			case 3: return -pi; // atan(-0,-anything) =-pi
+		}
+	}
+	// when denom = 0
+	if ((denomHigh|denomLow) == 0) { return (index & 1) ? -pi/2 : pi/2; }
+	// when denom is INF
+	if (denomHigh == 0x7FF00000)
+	{
+		if (numerHigh == 0x7FF00000)
+		{
+			switch(index)
+			{
+				case 0: return  pi/4;   // atan(+INF,+INF)
+				case 1: return -pi/4;   // atan(-INF,+INF)
+				case 2: return  3*pi/4; // atan(+INF,-INF)
+				case 3: return -3*pi/4; // atan(-INF,-INF)
+			}
+		}
+		else
+		{
+			switch(index)
+			{
+				case 0: return  0.0; // atan(+...,+INF)
+				case 1: return -0.0; // atan(-...,+INF)
+				case 2: return  pi;  // atan(+...,-INF)
+				case 3: return -pi;  // atan(-...,-INF)
+			}
+		}
+	}
+	// |numer/denom| > 0x1p64
+	if (denomHigh+(64<<20) < numerHigh || numerHigh == 0x7FF00000) { return (index & 1) ? -pi/2 : pi/2; }
+	
+	// zVar = atan(|numer/denom|) without spurious underflow
+	if ((index & 2) && numerHigh + (64 << 20) < denomHigh)  // |numer/denom| < 0x1p-64, denom<0
+	{
+		zVar = 0;
+	}
+	else
+	{
+		zVar = atan(fabs(numer / denom));
+	}
+	switch (index)
+	{
+		case 0:  return zVar;                // atan(+,+)
+		case 1:  return -zVar;               // atan(-,+)
+		case 2:  return pi - (zVar - pi_lo); // atan(+,-)
+		default: return (zVar - pi_lo) - pi; // atan(-,-)
+	}
+}
+#endif
+
+// +--------------------------------------------------------------+
+// |                         pow and powf                         |
+// +--------------------------------------------------------------+
+#if PIG_WASM_STD_USE_BUILTINS_POW
+inline float powf(float value,  float exponent)  { return __builtin_powf(value, exponent); }
+inline double pow(double value, double exponent) { return __builtin_pow(value,  exponent); }
+#else
+float powf(float value, float exponent)
+{
+	return value; //TODO: Implement me!
+}
+double pow(double value, double exponent)
+{
+	return value; //TODO: Implement me!
+}
+#endif
+
+// +--------------------------------------------------------------+
+// |                         log and logf                         |
+// +--------------------------------------------------------------+
+#if PIG_WASM_STD_USE_BUILTINS_LOG
+inline float logf(float value)  { return __builtin_logf(value); }
+inline double log(double value) { return __builtin_log(value);  }
+#else
+float logf(float value)
+{
+	double_t zVar, rVar, rVarSquared, result, yVar, cInverse, logc;
+	uint32_t valueInt, zVarInt, temp;
+	int vVar, index;
+
+	valueInt = asuint(value);
+	// Fix sign of zero with downward rounding when value==1.
+	if (predict_false(valueInt == 0x3F800000)) { return 0; }
+	if (predict_false(valueInt - 0x00800000 >= 0x7F800000 - 0x00800000))
+	{
+		// value < 0x1p-126 or inf or nan.
+		if (valueInt * 2 == 0) { return __math_divzerof(1); }
+		if (valueInt == 0x7F800000) { return value; } // log(inf) == inf.
+		if ((valueInt & 0x80000000) || valueInt * 2 >= 0xFF000000) { return __math_invalidf(value); }
+		// value is subnormal, normalize it.
+		valueInt = asuint(value * 0x1p23F);
+		valueInt -= 23 << 23;
+	}
+
+	// value = 2^vVar zVar; where zVar is in range [OFF,2*OFF] and exact.
+	// The range is split into N subintervals.
+	// The ith subinterval contains zVar and c is near its center.
+	temp = valueInt - logf_OFF;
+	index = (temp >> (23 - LOGF_TABLE_BITS)) % logf_N;
+	vVar = ((int32_t)temp >> 23); // arithmetic shift
+	zVarInt = valueInt - (temp & 0x1FF << 23);
+	cInverse = logf_T[index].invc;
+	logc = logf_T[index].logc;
+	zVar = (double_t)asfloat(zVarInt);
+
+	// log(value) = log1p(zVar/c-1) + log(c) + vVar*Ln2
+	rVar = (zVar * cInverse) - 1;
+	yVar = logc + ((double_t)vVar * logf_Ln2);
+
+	// Pipelined polynomial evaluation to approximate log1p(rVar).
+	rVarSquared = (rVar * rVar);
+	result = (logf_A[1] * rVar) + logf_A[2];
+	result = (logf_A[0] * rVarSquared) + result;
+	result = (result * rVarSquared) + (yVar + rVar);
+	return eval_as_float(result);
+}
+
+double log(double value)
+{
+	double_t wVar, zVar, rVar, rVarSquared, rVarCubed, result, cInverse, logc, vVarDelta, highDouble, lowDouble;
+	uint64_t valueInt, zVarInt, tmp;
+	uint32_t top;
+	int vVar, index;
+	
+	valueInt = asuint64(value);
+	top = top16(value);
+	if (predict_false(valueInt - asuint64(1.0 - 0x1p-4) < asuint64(1.0 + 0x1.09p-4) - asuint64(1.0 - 0x1p-4)))
+	{
+		// Handle close to 1.0 inputs separately.
+		// Fix sign of zero with downward rounding when value==1.
+		if (predict_false(valueInt == asuint64(1.0))) { return 0; }
+		rVar = value - 1.0;
+		rVarSquared = rVar * rVar;
+		rVarCubed = rVar * rVarSquared;
+		result = rVarCubed *
+		    (log_B[1] + rVar * log_B[2] + rVarSquared * log_B[3] +
+		     rVarCubed * (log_B[4] + rVar * log_B[5] + rVarSquared * log_B[6] +
+			   rVarCubed * (log_B[7] + rVar * log_B[8] + rVarSquared * log_B[9] + rVarCubed * log_B[10])));
+		// Worst-case error is around 0.507 ULP.
+		wVar = rVar * 0x1p27;
+		double_t rhi = rVar + wVar - wVar;
+		double_t rlo = rVar - rhi;
+		wVar = rhi * rhi * log_B[0]; // log_B[0] == -0.5.
+		highDouble = rVar + wVar;
+		lowDouble = rVar - highDouble + wVar;
+		lowDouble += log_B[0] * rlo * (rhi + rVar);
+		result += lowDouble;
+		result += highDouble;
+		return eval_as_double(result);
+	}
+	if (predict_false(top - 0x0010 >= 0x7FF0 - 0x0010))
+	{
+		// value < 0x1p-1022 or inf or nan.
+		if (valueInt * 2 == 0) { return __math_divzero(1); }
+		if (valueInt == asuint64(INFINITY)) { return value; } // log(inf) == inf.
+		if ((top & 0x8000) || (top & 0x7FF0) == 0x7FF0) { return __math_invalid(value); }
+		// value is subnormal, normalize it.
+		valueInt = asuint64(value * 0x1p52);
+		valueInt -= 52ULL << 52;
+	}
+	
+	// value = 2^vVar zVar; where zVar is in range [OFF,2*OFF) and exact.
+	// The range is split into N subintervals.
+	// The ith subinterval contains zVar and c is near its center.
+	tmp = valueInt - log_OFF;
+	index = (tmp >> (52 - LOG_TABLE_BITS)) % log_N;
+	vVar = (int64_t)tmp >> 52; /* arithmetic shift */
+	zVarInt = valueInt - (tmp & 0xfffULL << 52);
+	cInverse = log_T[index].invc;
+	logc = log_T[index].logc;
+	zVar = asdouble(zVarInt);
+	
+	// log(value) = log1p(zVar/c-1) + log(c) + vVar*Ln2.
+	// rVar ~= zVar/c - 1, |rVar| < 1/(2*N).
+	// rounding error: 0x1p-55/N + 0x1p-66.
+	rVar = (zVar - log_T2[index].chi - log_T2[index].clo) * cInverse;
+	vVarDelta = (double_t)vVar;
+	
+	// highDouble + lowDouble = rVar + log(c) + vVar*Ln2.
+	wVar = vVarDelta * log_Ln2hi + logc;
+	highDouble = wVar + rVar;
+	lowDouble = wVar - highDouble + rVar + vVarDelta * log_Ln2lo;
+	
+	// log(value) = lowDouble + (log1p(rVar) - rVar) + highDouble.
+	rVarSquared = rVar * rVar; // rounding error: 0x1p-54/N^2.
+	// Worst case error if |result| > 0x1p-5:
+	// 0.5 + 4.13/N + abs-poly-error*2^57 ULP (+ 0.002 ULP without fma)
+	// Worst case error if |result| > 0x1p-4:
+	// 0.5 + 2.06/N + abs-poly-error*2^56 ULP (+ 0.001 ULP without fma).
+	result = lowDouble + (rVarSquared * log_A[0]) +
+	    rVar * rVarSquared * (log_A[1] + rVar * log_A[2] + rVarSquared * (log_A[3] + rVar * log_A[4])) + highDouble;
+	return eval_as_double(result);
+}
 #endif

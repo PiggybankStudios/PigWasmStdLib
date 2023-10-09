@@ -108,3 +108,25 @@
 		- fputs   ldexp    sprintf  vfprintf
 		- free    log10    sqrt     vprintf
 #
+
+# cosf implementation written by Chat-GPT
+	float custom_cosf(float x)
+	{
+		x = fmodf(x, 2.0f * M_PI); // Ensure x is in the range [0, 2π]
+		
+		int n = 20; // Number of iterations for the Taylor series expansion
+		float result = 1.0f;
+		float term = 1.0f;
+		float x_squared = x * x;
+		float denominator = 2.0f;
+		
+		for (int i = 2; i <= n; i += 2)
+		{
+			term *= -x_squared / (denominator * (denominator - 1));
+			result += term;
+			denominator += 2.0f;
+		}
+		
+		return result;
+	}
+#

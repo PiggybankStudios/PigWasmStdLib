@@ -330,5 +330,37 @@ void RunMathTestCases()
 	TestCaseDouble(atan(10.0), 1.4711276743037347);
 	TestCaseDouble(atan(-10.0), -1.4711276743037347);
 	
+	TestCaseFloat(atan2f(0.0f, 1.0f), 0.0f);
+	TestCaseFloat(atan2f(1.0f, 10.0f), 0.09966865181922913f);
+	TestCaseFloat(atan2f(1.0f, 2.0f), 0.46364760398864746f);
+	TestCaseFloat(atan2f(1.0f, 1.0f), 0.7853981852531433f);
+	TestCaseFloat(atan2f(-1.0f, 1.0f), -0.7853981852531433f);
+	TestCaseFloat(atan2f(100.0f, 10.0f), 1.4711276292800903f);
+	TestCaseFloat(atan2f(-100.0f, 10.0f), -1.4711276292800903f);
+	
+	TestCaseDouble(atan2(0.0, 1.0), 0.0);
+	TestCaseDouble(atan2(1.0, 10.0), 0.09966865249116204);
+	TestCaseDouble(atan2(1.0, 2.0), 0.4636476090008061);
+	TestCaseDouble(atan2(1.0, 1.0), 0.7853981633974483);
+	TestCaseDouble(atan2(-1.0, 1.0), -0.7853981633974483);
+	TestCaseDouble(atan2(100.0, 10.0), 1.4711276743037347);
+	TestCaseDouble(atan2(-100.0, 10.0), -1.4711276743037347);
+	
+	//TODO: Add test cases for powf and pow
+	
+	TestCaseFloat(logf(1.0f), 0.0f);
+	TestCaseFloat(logf(2.0f), 0.6931471824645996f);
+	TestCaseFloat(logf(0.0f), -INFINITY);
+	TestCaseFloat(logf(-1.0f), NAN);
+	TestCaseFloat(logf(1.2f), 0.18232159316539764f);
+	TestCaseFloat(logf(100.0f), 4.605170249938965f);
+	
+	TestCaseDouble(log(1.0), 0.0);
+	TestCaseDouble(log(2.0), 0.6931471805599453);
+	TestCaseDouble(log(0.0), -INFINITY);
+	TestCaseDouble(log(-1.0), NAN);
+	TestCaseDouble(log(1.2), 0.1823215567939546);
+	TestCaseDouble(log(100.0), 4.605170185988092);
+	
 	jsPrintNumber("Ran Math Tests", numCases);
 }

@@ -80,6 +80,7 @@ EXTERN_C_START
 #define asuint64(value) ((union { double   _value; uint64_t _integer; }){ value })._integer
 #define asdouble(value) ((union { uint64_t _value; double   _double;  }){ value })._double
 
+#define EXTRACT_WORDS(highWord, lowWord, value) do { uint64_t __u = asuint64(value); (highWord) = (__u >> 32); (lowWord) = (uint32_t)__u; } while (0)
 #define INSERT_WORDS(doubleVar, highWord, lowWord) do { (doubleVar) = asdouble(((uint64_t)(highWord)<<32) | (uint32_t)(lowWord)); } while (0)
 #define GET_HIGH_WORD(wordVar, value) do { (wordVar) = asuint64(value) >> 32; } while (0)
 #define GET_LOW_WORD(wordVar, value)  do { (wordVar) = (uint32_t)asuint64(value); } while (0)
@@ -109,6 +110,12 @@ double __math_invalid(double value);
 
 float eval_as_float(float x);
 double eval_as_double(double x);
+
+float __math_divzerof(uint32_t sign);
+double __math_divzero(uint32_t sign);
+
+// Top 16 bits of a double.
+uint32_t top16(double x);
 
 // +--------------------------------------------------------------+
 // |                          Functions                           |
@@ -174,14 +181,14 @@ double acos(double value);
 float  atanf(float value);
 double atan(double value);
 
-float  atan2f(float numer, float denom); //TODO: Implement me!
-double atan2(double numer, double denom); //TODO: Implement me!
+float  atan2f(float numer, float denom);
+double atan2(double numer, double denom);
 
-float  powf(float value, float exponent); //TODO: Implement me!
-double pow(double value, double exponent); //TODO: Implement me!
+float  powf(float value, float exponent);
+double pow(double value, double exponent);
 
-float  logf(float value); //TODO: Implement me!
-double log(double value); //TODO: Implement me!
+float  logf(float value);
+double log(double value);
 
 float  log2f(float value); //TODO: Implement me!
 double log2(double value); //TODO: Implement me!
@@ -236,6 +243,7 @@ M_SQRT1_2
 #define asfloat(value)
 #define asuint64(value)
 #define asdouble(value)
+#define EXTRACT_WORDS(highWord, lowWord, value)
 #define INSERT_WORDS(doubleVar, highWord, lowWord)
 #define GET_HIGH_WORD(wordVar, value)
 #define GET_LOW_WORD(wordVar, value)
@@ -255,6 +263,10 @@ float __math_invalidf(float value)
 double __math_invalid(double value)
 inline float eval_as_float(float x)
 inline double eval_as_double(double x)
+float fp_barrierf(float value)
+float __math_divzerof(uint32_t sign)
+double __math_divzero(uint32_t sign)
+uint32_t top16(double x)
 float  fminf(float value1, float value2)
 double fmin(double value1, double value2)
 float  fmaxf(float value1, float value2)
