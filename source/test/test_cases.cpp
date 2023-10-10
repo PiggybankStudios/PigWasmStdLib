@@ -376,5 +376,23 @@ void RunMathTestCases()
 	TestCaseDouble(log2(1.2),  0.2630344058337938);
 	TestCaseDouble(log2(100.0), 6.643856189774724);
 	
+	TestCaseFloat(log10f(1.0f), 0.0f);
+	TestCaseFloat(log10f(2.0f), 0.3010300099849701f);
+	TestCaseFloat(log10f(10.0f), 1.0f);
+	TestCaseFloat(log10f(0.0f), -INFINITY);
+	TestCaseFloat(log10f(-1.0f), NAN);
+	TestCaseFloat(log10f(1.2f), 0.0791812613606453f);
+	TestCaseFloat(log10f(100.0f), 2.0f);
+	TestCaseFloat(log10f(124.0f), 2.093421697616577f);
+	
+	TestCaseDouble(log10(1.0), 0.0);
+	TestCaseDouble(log10(2.0), 0.3010299956639812);
+	TestCaseDouble(log10(10.0), 1.0);
+	TestCaseDouble(log10(0.0), -INFINITY);
+	TestCaseDouble(log10(-1.0), NAN);
+	TestCaseDouble(log10(1.2), 0.07918124604762482);
+	TestCaseDouble(log10(100.0), 2.0);
+	TestCaseDouble(log10(124.0), 2.093421685162235);
+	
 	jsPrintNumber("Ran Math Tests", numCases);
 }

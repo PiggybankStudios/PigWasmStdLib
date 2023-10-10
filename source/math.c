@@ -23,6 +23,7 @@ Description:
 #define PIG_WASM_STD_USE_BUILTINS_POW            0
 #define PIG_WASM_STD_USE_BUILTINS_LOG            0
 #define PIG_WASM_STD_USE_BUILTINS_LOG2           0
+#define PIG_WASM_STD_USE_BUILTINS_LOG10          0
 
 // +--------------------------------------------------------------+
 // |                        Float Helpers                         |
@@ -93,7 +94,7 @@ double eval_as_double(double x)
 #include "math_trig_helpers.c"
 #endif
 
-#if !PIG_WASM_STD_USE_BUILTINS_LOG || !PIG_WASM_STD_USE_BUILTINS_LOG2
+#if !PIG_WASM_STD_USE_BUILTINS_LOG || !PIG_WASM_STD_USE_BUILTINS_LOG2 || !PIG_WASM_STD_USE_BUILTINS_LOG10
 #include "math_log_helpers.c"
 #endif
 
@@ -1936,5 +1937,122 @@ double log2(double value)
 	polyValue = log2_A[0] + rVar * log2_A[1] + rVarSquared * (log2_A[2] + rVar * log2_A[3]) + rVarQuad * (log2_A[4] + rVar * log2_A[5]);
 	result = resultLow + (rVarSquared * polyValue) + resultHigh;
 	return eval_as_double(result);
+}
+#endif
+
+// +--------------------------------------------------------------+
+// |                       log10 and log10f                       |
+// +--------------------------------------------------------------+
+#if PIG_WASM_STD_USE_BUILTINS_LOG10
+inline float log10f(float value)  { return __builtin_log10f(value); }
+inline double log10(double value) { return __builtin_log10(value);  }
+#else
+float log10f(float value)
+{
+	union { float value; uint32_t integer; } valueUnion = { value };
+	float_t hfsq, valueSubOne, sVar, sVarSquared, sVarQuad, tVar1, tVar2, tSum, vVarOriginal, highFloat, lowFloat;
+	uint32_t valueInt;
+	int vVar;
+	
+	valueInt = valueUnion.integer;
+	vVar = 0;
+	if (valueInt < 0x00800000 || valueInt>>31) // value < 2**-126
+	{
+		if (valueInt<<1 == 0) { return -1 / (value * value); } // log(+-0)=-inf
+		if (valueInt>>31) { return (value - value) / 0.0f; } // log(-#) = NaN
+		// subnormal number, scale up value
+		vVar -= 25;
+		value *= 0x1p25F;
+		valueUnion.value = value;
+		valueInt = valueUnion.integer;
+	}
+	else if (valueInt >= 0x7F800000) { return value; }
+	else if (valueInt == 0x3F800000) { return 0; }
+	
+	// reduce value into [sqrt(2)/2, sqrt(2)]
+	valueInt += 0x3F800000 - 0x3F3504F3;
+	vVar += (int)(valueInt>>23) - 0x7F;
+	valueInt = (valueInt & 0x007FFFFF) + 0x3F3504F3;
+	valueUnion.integer = valueInt;
+	value = valueUnion.value;
+	
+	valueSubOne = value - 1.0f;
+	sVar = valueSubOne / (2.0f + valueSubOne);
+	sVarSquared = sVar * sVar;
+	sVarQuad = sVarSquared * sVarSquared;
+	tVar1= sVarQuad * (Lg2 + (sVarQuad * Lg4));
+	tVar2= sVarSquared * (Lg1 + (sVarQuad * Lg3));
+	tSum = tVar2 + tVar1;
+	hfsq = 0.5f * valueSubOne * valueSubOne;
+	
+	highFloat = valueSubOne - hfsq;
+	valueUnion.value = highFloat;
+	valueUnion.integer &= 0xFFFFF000;
+	highFloat = valueUnion.value;
+	lowFloat = valueSubOne - highFloat - hfsq + (sVar * (hfsq + tSum));
+	vVarOriginal = vVar;
+	return (vVarOriginal * log10_2lo) + ((lowFloat + highFloat) * ivln10lo) + (lowFloat * ivln10hi) + (highFloat * ivln10hi) + (vVarOriginal * log10_2hi);
+}
+double log10(double value)
+{
+	union { double value; uint64_t integer; } valueUnion = { value };
+	double_t hfsq, valueSubOne, sVar, sVarSquared, sVarQuad, tVar1, tVar2, tSum, vVarOriginal, result, highDouble, lowDouble, resultHigh, resultLow;
+	uint32_t valueUpperWord;
+	int vVar;
+	
+	valueUpperWord = (valueUnion.integer >> 32);
+	vVar = 0;
+	if (valueUpperWord < 0x00100000 || (valueUpperWord >> 31))
+	{
+		if ((valueUnion.integer << 1) == 0) { return -1 / (value * value); } // log(+-0)=-inf
+		if (valueUpperWord >> 31) { return (value - value) / 0.0; } // log(-#) = NaN
+		// subnormal number, scale value up
+		vVar -= 54;
+		value *= 0x1p54;
+		valueUnion.value = value;
+		valueUpperWord = (valueUnion.integer >> 32);
+	}
+	else if (valueUpperWord >= 0x7FF00000) { return value; }
+	else if (valueUpperWord == 0x3FF00000 && (valueUnion.integer << 32) == 0) { return 0; }
+	
+	// reduce value into [sqrt(2)/2, sqrt(2)]
+	valueUpperWord += 0x3FF00000 - 0x3FE6A09E;
+	vVar += (int)(valueUpperWord >> 20) - 0x3FF;
+	valueUpperWord = (valueUpperWord & 0x000FFFFF) + 0x3FE6A09E;
+	valueUnion.integer = (uint64_t)valueUpperWord << 32 | (valueUnion.integer & 0xFFFFFFFF);
+	value = valueUnion.value;
+	
+	valueSubOne = value - 1.0;
+	hfsq = 0.5 * valueSubOne * valueSubOne;
+	sVar = valueSubOne / (2.0 + valueSubOne);
+	sVarSquared = sVar * sVar;
+	sVarQuad = sVarSquared * sVarSquared;
+	tVar1 = sVarQuad * (Lg2d + sVarQuad * (Lg4d + sVarQuad * Lg6d));
+	tVar2 = sVarSquared * (Lg1d + sVarQuad * (Lg3d + sVarQuad * (Lg5d + sVarQuad * Lg7d)));
+	tSum = tVar2 + tVar1;
+	
+	// See log2.c for details.
+	// highDouble+lowDouble = valueSubOne - hfsq + sVar*(hfsq+tSum) ~ log(1+valueSubOne)
+	highDouble = valueSubOne - hfsq;
+	valueUnion.value = highDouble;
+	valueUnion.integer &= (uint64_t)-1 << 32;
+	highDouble = valueUnion.value;
+	lowDouble = valueSubOne - highDouble - hfsq + (sVar * (hfsq + tSum));
+	
+	// resultHigh+resultLow ~ log10(1+valueSubOne) + vVar*log10(2)
+	resultHigh = highDouble * ivln10hid;
+	vVarOriginal = vVar;
+	result = vVarOriginal * log10_2hid;
+	resultLow = vVarOriginal * log10_2lod + (lowDouble + highDouble) * ivln10lod + lowDouble * ivln10hid;
+	
+	// Extra precision in for adding result is not strictly needed
+	// since there is no very large cancellation near value = sqrt(2) or
+	// value = 1/sqrt(2), but we do it anyway since it costs little on CPUs
+	// with some parallelism and it reduces the error for many args.
+	sVarQuad = result + resultHigh;
+	resultLow += (result - sVarQuad) + resultHigh;
+	resultHigh = sVarQuad;
+	
+	return resultLow + resultHigh;
 }
 #endif

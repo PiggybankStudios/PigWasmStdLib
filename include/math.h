@@ -193,8 +193,8 @@ double log(double value);
 float  log2f(float value);
 double log2(double value);
 
-float  log10f(float value); //TODO: Implement me!
-double log10(double value); //TODO: Implement me!
+float  log10f(float value);
+double log10(double x);
 
 double ldexp(double value, int exponent); //TODO: Implement me!
 float  ldexpf(float value, int exponent); //TODO: Implement me!
