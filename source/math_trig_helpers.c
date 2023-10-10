@@ -6,7 +6,7 @@ Description:
 	** Holds some larger functions that feed implementations for things like sin, cos, asin, etc.
 */
 
-//NOTE: This file is only #inluded if !PIG_WASM_STD_USE_BUILTINS_SIN_COS_TAN
+//NOTE: This file is only #inluded if !PIG_WASM_STD_USE_BUILTINS_SIN_COS_TAN || !PIG_WASM_STD_USE_BUILTINS_ASIN_ACOS_ATAN
 
 // +--------------------------------------------------------------+
 // |                 __sindf __cosdf and __tandf                  |

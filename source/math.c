@@ -22,6 +22,7 @@ Description:
 #define PIG_WASM_STD_USE_BUILTINS_ASIN_ACOS_ATAN 0
 #define PIG_WASM_STD_USE_BUILTINS_POW            0
 #define PIG_WASM_STD_USE_BUILTINS_LOG            0
+#define PIG_WASM_STD_USE_BUILTINS_LOG2           0
 
 // +--------------------------------------------------------------+
 // |                        Float Helpers                         |
@@ -87,6 +88,14 @@ double eval_as_double(double x)
 	double y = x;
 	return y;
 }
+
+#if !PIG_WASM_STD_USE_BUILTINS_SIN_COS_TAN || !PIG_WASM_STD_USE_BUILTINS_ASIN_ACOS_ATAN
+#include "math_trig_helpers.c"
+#endif
+
+#if !PIG_WASM_STD_USE_BUILTINS_LOG || !PIG_WASM_STD_USE_BUILTINS_LOG2
+#include "math_log_helpers.c"
+#endif
 
 #if !PIG_WASM_STD_USE_BUILTINS_SQRT || !PIG_WASM_STD_USE_BUILTINS_CBRT
 
@@ -921,8 +930,6 @@ inline float tanf(float value)  { return __builtin_tanf(value); }
 inline double tan(double value) { return __builtin_tan(value);  }
 #else
 
-#include "math_trig_helpers.c"
-
 // Small multiples of pi/2 rounded to double precision.
 static const double
 	pio2_1x = 1*M_PI_2, // 0x3FF921FB, 0x54442D18
@@ -1722,7 +1729,7 @@ float logf(float value)
 
 double log(double value)
 {
-	double_t wVar, zVar, rVar, rVarSquared, rVarCubed, result, cInverse, logc, vVarDelta, highDouble, lowDouble;
+	double_t wVar, zVar, rVar, rVarSquared, rVarCubed, result, cInverse, logc, vVarDelta, resultHigh, resultLow;
 	uint64_t valueInt, zVarInt, tmp;
 	uint32_t top;
 	int vVar, index;
@@ -1746,11 +1753,11 @@ double log(double value)
 		double_t rhi = rVar + wVar - wVar;
 		double_t rlo = rVar - rhi;
 		wVar = rhi * rhi * log_B[0]; // log_B[0] == -0.5.
-		highDouble = rVar + wVar;
-		lowDouble = rVar - highDouble + wVar;
-		lowDouble += log_B[0] * rlo * (rhi + rVar);
-		result += lowDouble;
-		result += highDouble;
+		resultHigh = rVar + wVar;
+		resultLow = rVar - resultHigh + wVar;
+		resultLow += log_B[0] * rlo * (rhi + rVar);
+		result += resultLow;
+		result += resultHigh;
 		return eval_as_double(result);
 	}
 	if (predict_false(top - 0x0010 >= 0x7FF0 - 0x0010))
@@ -1781,19 +1788,153 @@ double log(double value)
 	rVar = (zVar - log_T2[index].chi - log_T2[index].clo) * cInverse;
 	vVarDelta = (double_t)vVar;
 	
-	// highDouble + lowDouble = rVar + log(c) + vVar*Ln2.
+	// resultHigh + resultLow = rVar + log(c) + vVar*Ln2.
 	wVar = vVarDelta * log_Ln2hi + logc;
-	highDouble = wVar + rVar;
-	lowDouble = wVar - highDouble + rVar + vVarDelta * log_Ln2lo;
+	resultHigh = wVar + rVar;
+	resultLow = wVar - resultHigh + rVar + vVarDelta * log_Ln2lo;
 	
-	// log(value) = lowDouble + (log1p(rVar) - rVar) + highDouble.
+	// log(value) = resultLow + (log1p(rVar) - rVar) + resultHigh.
 	rVarSquared = rVar * rVar; // rounding error: 0x1p-54/N^2.
 	// Worst case error if |result| > 0x1p-5:
 	// 0.5 + 4.13/N + abs-poly-error*2^57 ULP (+ 0.002 ULP without fma)
 	// Worst case error if |result| > 0x1p-4:
 	// 0.5 + 2.06/N + abs-poly-error*2^56 ULP (+ 0.001 ULP without fma).
-	result = lowDouble + (rVarSquared * log_A[0]) +
-	    rVar * rVarSquared * (log_A[1] + rVar * log_A[2] + rVarSquared * (log_A[3] + rVar * log_A[4])) + highDouble;
+	result = resultLow + (rVarSquared * log_A[0]) +
+	    rVar * rVarSquared * (log_A[1] + rVar * log_A[2] + rVarSquared * (log_A[3] + rVar * log_A[4])) + resultHigh;
+	return eval_as_double(result);
+}
+#endif
+
+// +--------------------------------------------------------------+
+// |                        log2 and log2f                        |
+// +--------------------------------------------------------------+
+#if PIG_WASM_STD_USE_BUILTINS_LOG2
+inline float log2f(float value)  { return __builtin_log2f(value); }
+inline double log2(double value) { return __builtin_log2(value);  }
+#else
+
+float log2f(float value)
+{
+	double_t zVar, rVar, rVarSquared, pVar, result, yVar, vInverse, logc;
+	uint32_t valueInt, zVarInt, top, tmp;
+	int k, i;
+	
+	valueInt = asuint(value);
+	// Fix sign of zero with downward rounding when value==1.
+	if (predict_false(valueInt == 0x3F800000)) { return 0; }
+	if (predict_false(valueInt - 0x00800000 >= 0x7F800000 - 0x00800000))
+	{
+		// value < 0x1p-126 or inf or nan.
+		if (valueInt * 2 == 0) { return __math_divzerof(1); }
+		if (valueInt == 0x7F800000) { return value; } // log2(inf) == inf.
+		if ((valueInt & 0x80000000) || valueInt * 2 >= 0xFF000000) { return __math_invalidf(value); }
+		// value is subnormal, normalize it.
+		valueInt = asuint(value * 0x1p23f);
+		valueInt -= (23 << 23);
+	}
+	
+	// value = 2^k zVar; where zVar is in range [OFF,2*OFF] and exact.
+	// The range is split into N subintervals.
+	// The ith subinterval contains zVar and c is near its center.
+	tmp = valueInt - log2f_OFF;
+	i = (tmp >> (23 - LOG2F_TABLE_BITS)) % log2f_N;
+	top = (tmp & 0xFF800000);
+	zVarInt = valueInt - top;
+	k = (int32_t)tmp >> 23; // arithmetic shift
+	vInverse = log2f_T[i].invc;
+	logc = log2f_T[i].logc;
+	zVar = (double_t)asfloat(zVarInt);
+	
+	// log2(value) = log1p(z/c-1)/ln2 + log2(c) + k
+	rVar = zVar * vInverse - 1;
+	yVar = logc + (double_t)k;
+	
+	// Pipelined polynomial evaluation to approximate log1p(rVar)/ln2.
+	rVarSquared = rVar * rVar;
+	result = log2f_A[1] * rVar + log2f_A[2];
+	result = log2f_A[0] * rVarSquared + result;
+	pVar = log2f_A[3] * rVar + yVar;
+	result = result * rVarSquared + pVar;
+	return eval_as_float(result);
+}
+double log2(double value)
+{
+	double_t zVar, rVar, rVarSquared, rVarQuad, result, cInverse, logc, tempDouble, resultHigh, resultLow, tVar1, tVar2, tVar3, polyValue;
+	uint64_t valueInt, iz, tmp;
+	uint32_t top;
+	int temp, index;
+	
+	valueInt = asuint64(value);
+	top = top16(value);
+	if (predict_false(valueInt - asuint64(1.0 - 0x1.5B51p-5) < asuint64(1.0 + 0x1.6AB2p-5) - asuint64(1.0 - 0x1.5B51p-5)))
+	{
+		// Handle close to 1.0 inputs separately.
+		// Fix sign of zero with downward rounding when value==1.
+		if (predict_false(valueInt == asuint64(1.0))) { return 0; }
+		rVar = value - 1.0;
+		double_t rVarHigh, rVarLow;
+		rVarHigh = asdouble(asuint64(rVar) & -1ULL << 32);
+		rVarLow = rVar - rVarHigh;
+		resultHigh = (rVarHigh * log2_InvLn2hi);
+		resultLow = (rVarLow * log2_InvLn2hi) + (rVar * log2_InvLn2lo);
+		rVarSquared = rVar * rVar; // rounding error: 0x1p-62.
+		rVarQuad = rVarSquared * rVarSquared;
+		// Worst-case error is less than 0.54 ULP (0.55 ULP without fma).
+		polyValue = rVarSquared * (log2_B[0] + (rVar * log2_B[1]));
+		result = resultHigh + polyValue;
+		resultLow += resultHigh - result + polyValue;
+		resultLow += rVarQuad * (log2_B[2] + rVar * log2_B[3] + rVarSquared * (log2_B[4] + rVar * log2_B[5]) +
+			    rVarQuad * (log2_B[6] + rVar * log2_B[7] + rVarSquared * (log2_B[8] + rVar * log2_B[9])));
+		result += resultLow;
+		return eval_as_double(result);
+	}
+	
+	if (predict_false(top - 0x0010 >= 0x7FF0 - 0x0010))
+	{
+		// value < 0x1p-1022 or inf or nan.
+		if (valueInt * 2 == 0) { return __math_divzero(1); }
+		if (valueInt == asuint64(INFINITY)) { return value; } // log(inf) == inf.
+		if ((top & 0x8000) || (top & 0x7FF0) == 0x7FF0) { return __math_invalid(value); }
+		// value is subnormal, normalize it.
+		valueInt = asuint64(value * 0x1p52);
+		valueInt -= 52ULL << 52;
+	}
+	
+	// value = 2^temp zVar; where zVar is in range [OFF,2*OFF) and exact.
+	// The range is split into N subintervals.
+	// The ith subinterval contains zVar and c is near its center.
+	tmp = valueInt - log2_OFF;
+	index = (tmp >> (52 - LOG2_TABLE_BITS)) % log2_N;
+	temp = (int64_t)tmp >> 52; // arithmetic shift
+	iz = valueInt - (tmp & 0xfffULL << 52);
+	cInverse = log2_T[index].invc;
+	logc = log2_T[index].logc;
+	zVar = asdouble(iz);
+	tempDouble = (double_t)temp;
+	
+	// log2(value) = log2(zVar/c) + log2(c) + temp.
+	// rVar ~= zVar/c - 1, |rVar| < 1/(2*N).
+	double_t rVarHigh, rVarLow;
+	// rounding error: 0x1p-55/N + 0x1p-65.
+	rVar = (zVar - log2_T2[index].chi - log2_T2[index].clo) * cInverse;
+	rVarHigh = asdouble(asuint64(rVar) & -1ULL << 32);
+	rVarLow = rVar - rVarHigh;
+	tVar1 = rVarHigh * log2_InvLn2hi;
+	tVar2 = rVarLow * log2_InvLn2hi + rVar * log2_InvLn2lo;
+	
+	// resultHigh + resultLow = rVar/ln2 + log2(c) + temp.
+	tVar3 = tempDouble + logc;
+	resultHigh = tVar3 + tVar1;
+	resultLow = tVar3 - resultHigh + tVar1 + tVar2;
+	
+	// log2(rVar+1) = rVar/ln2 + rVar^2*poly(rVar).
+	// Evaluation is optimized assuming superscalar pipelined execution.
+	rVarSquared = rVar * rVar; // rounding error: 0x1p-54/N^2.
+	rVarQuad = rVarSquared * rVarSquared;
+	// Worst-case error if |result| > 0x1p-4: 0.547 ULP (0.550 ULP without fma).
+	// ~ 0.5 + 2/N/ln2 + abs-poly-error*0x1p56 ULP (+ 0.003 ULP without fma).
+	polyValue = log2_A[0] + rVar * log2_A[1] + rVarSquared * (log2_A[2] + rVar * log2_A[3]) + rVarQuad * (log2_A[4] + rVar * log2_A[5]);
+	result = resultLow + (rVarSquared * polyValue) + resultHigh;
 	return eval_as_double(result);
 }
 #endif

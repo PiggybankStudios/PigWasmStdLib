@@ -190,8 +190,8 @@ double pow(double value, double exponent);
 float  logf(float value);
 double log(double value);
 
-float  log2f(float value); //TODO: Implement me!
-double log2(double value); //TODO: Implement me!
+float  log2f(float value);
+double log2(double value);
 
 float  log10f(float value); //TODO: Implement me!
 double log10(double value); //TODO: Implement me!
