@@ -6,6 +6,8 @@ Description:
 	** Holds some larger functions that feed implementations for things like log, logf, log2, etc.
 */
 
+//NOTE: This file is only #inluded if !PIG_WASM_STD_USE_BUILTINS_LOG || !PIG_WASM_STD_USE_BUILTINS_LOG2 || !PIG_WASM_STD_USE_BUILTINS_LOG10
+
 // +--------------------------------------------------------------+
 // |                    log and logf constants                    |
 // +--------------------------------------------------------------+

@@ -117,6 +117,8 @@ double __math_divzero(uint32_t sign);
 // Top 16 bits of a double.
 uint32_t top16(double x);
 
+float fp_barrierf(float x);
+
 // +--------------------------------------------------------------+
 // |                          Functions                           |
 // +--------------------------------------------------------------+
@@ -263,7 +265,7 @@ float __math_invalidf(float value)
 double __math_invalid(double value)
 inline float eval_as_float(float x)
 inline double eval_as_double(double x)
-float fp_barrierf(float value)
+float fp_barrierf(float x)
 float __math_divzerof(uint32_t sign)
 double __math_divzero(uint32_t sign)
 uint32_t top16(double x)

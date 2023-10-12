@@ -346,7 +346,23 @@ void RunMathTestCases()
 	TestCaseDouble(atan2(100.0, 10.0), 1.4711276743037347);
 	TestCaseDouble(atan2(-100.0, 10.0), -1.4711276743037347);
 	
-	//TODO: Add test cases for powf and pow
+	TestCaseFloat(powf(2.0f, 2.0f), 4.0f);
+	TestCaseFloat(powf(2.0f, 3.0f), 8.0f);
+	TestCaseFloat(powf(4.0f, 0.5f), 2.0f);
+	TestCaseFloat(powf(2.0f, 0.5f), sqrtf(2.0f));
+	TestCaseFloat(powf(1.1f, 2.0f), 1.2100000381469727f);
+	TestCaseFloat(powf(2.0f, 1.2f), 2.2973968982696533f);
+	TestCaseFloat(powf(2.0f, 1.8f), 3.4822020530700684f);
+	TestCaseFloat(powf(2.0f, 1.99f), 3.972369909286499f);
+	TestCaseFloat(powf(2.0f, 3.001f), 8.005546569824219f);
+	TestCaseFloat(powf(2.0f, 0.0f), 1.0f);
+	TestCaseFloat(powf(2.0f, INFINITY), INFINITY);
+	TestCaseFloat(powf(2.0f, NAN), NAN);
+	TestCaseFloat(powf(NAN, NAN), NAN);
+	TestCaseFloat(powf(NAN, 2.0f), NAN);
+	TestCaseFloat(powf(INFINITY, 2.0f), INFINITY);
+	TestCaseFloat(powf(-INFINITY, 2.0f), INFINITY);
+	TestCaseFloat(powf(-INFINITY, 3.0f), -INFINITY);
 	
 	TestCaseFloat(logf(1.0f), 0.0f);
 	TestCaseFloat(logf(2.0f), 0.6931471824645996f);
