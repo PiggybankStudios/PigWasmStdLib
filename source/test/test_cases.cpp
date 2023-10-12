@@ -394,5 +394,23 @@ void RunMathTestCases()
 	TestCaseDouble(log10(100.0), 2.0);
 	TestCaseDouble(log10(124.0), 2.093421685162235);
 	
+	// TODO: add test cases for ldexpf
+	
+	TestCaseFloat(copysignf(112.0f, -1.0f), -112.0f);
+	TestCaseFloat(copysignf(112.0f, -INFINITY), -112.0f);
+	TestCaseFloat(copysignf(0.0f, -1.0f), -0.0f);
+	TestCaseFloat(copysignf(INFINITY, -1.0f), -INFINITY);
+	TestCaseFloat(copysignf(-INFINITY, 0.0f), INFINITY);
+	TestCaseFloat(copysignf(NAN, -1.0f), NAN);
+	TestCaseFloat(copysignf(112.0f, NAN), 112.0f);
+	
+	TestCaseDouble(copysign(112.0, -1.0), -112.0);
+	TestCaseDouble(copysign(112.0, -INFINITY), -112.0);
+	TestCaseDouble(copysign(0.0, -1.0), -0.0);
+	TestCaseDouble(copysign(INFINITY, -1.0), -INFINITY);
+	TestCaseDouble(copysign(-INFINITY, 0.0), INFINITY);
+	TestCaseDouble(copysign(NAN, -1.0), NAN);
+	TestCaseDouble(copysign(112.0, NAN), 112.0);
+	
 	jsPrintNumber("Ran Math Tests", numCases);
 }

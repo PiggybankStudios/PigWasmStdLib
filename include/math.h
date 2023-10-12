@@ -196,11 +196,11 @@ double log2(double value);
 float  log10f(float value);
 double log10(double x);
 
-double ldexp(double value, int exponent); //TODO: Implement me!
-float  ldexpf(float value, int exponent); //TODO: Implement me!
+float  ldexpf(float value, int exponent);
+double ldexp(double value, int exponent);
 
-float  copysignf(float magnitude, float sign); //TODO: Implement me!
-double copysign(double magnitude, double sign); //TODO: Implement me!
+float  copysignf(float magnitude, float sign);
+double copysign(double magnitude, double sign);
 // long double copysignl(long double magnitude, long double sign);
 
 EXTERN_C_END
