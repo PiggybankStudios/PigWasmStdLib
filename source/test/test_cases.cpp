@@ -182,7 +182,23 @@ void RunMathTestCases()
 	TestCaseDouble(ceil(-INFINITY), -INFINITY);
 	TestCaseDouble(ceil(NAN), NAN);
 	
-	//TODO: Add scalbn tests!
+	TestCaseFloat(scalbnf(1.0f, 1), 2.0f); //scalbn(a, b) = a * 2^b
+	TestCaseFloat(scalbnf(1.0f, 4), 16.0f);
+	TestCaseFloat(scalbnf(4.0f, 1), 8.0f);
+	TestCaseFloat(scalbnf(3.14f, 0), 3.14f);
+	TestCaseFloat(scalbnf(1.0f, -1), 0.5f);
+	TestCaseFloat(scalbnf(1.0f, -2), 0.25f);
+	TestCaseFloat(scalbnf(INFINITY, 2), INFINITY);
+	TestCaseFloat(scalbnf(NAN, 2), NAN);
+	
+	TestCaseDouble(scalbn(1.0, 1), 2.0);
+	TestCaseDouble(scalbn(1.0, 4), 16.0);
+	TestCaseDouble(scalbn(4.0, 1), 8.0);
+	TestCaseDouble(scalbn(3.14, 0), 3.14);
+	TestCaseDouble(scalbn(1.0, -1), 0.5);
+	TestCaseDouble(scalbn(1.0, -2), 0.25);
+	TestCaseDouble(scalbn(INFINITY, 2), INFINITY);
+	TestCaseDouble(scalbn(NAN, 2), NAN);
 	
 	TestCaseFloat(sqrtf(0.0f), 0.0f);
 	TestCaseFloat(sqrtf(1.0f), 1.0f);
@@ -428,7 +444,23 @@ void RunMathTestCases()
 	TestCaseDouble(log10(100.0), 2.0);
 	TestCaseDouble(log10(124.0), 2.093421685162235);
 	
-	// TODO: add test cases for ldexpf
+	TestCaseFloat(ldexpf(1.0f, 1), 2.0f); //ldexp is equivalent to scalbn
+	TestCaseFloat(ldexpf(1.0f, 4), 16.0f);
+	TestCaseFloat(ldexpf(4.0f, 1), 8.0f);
+	TestCaseFloat(ldexpf(3.14f, 0), 3.14f);
+	TestCaseFloat(ldexpf(1.0f, -1), 0.5f);
+	TestCaseFloat(ldexpf(1.0f, -2), 0.25f);
+	TestCaseFloat(ldexpf(INFINITY, 2), INFINITY);
+	TestCaseFloat(ldexpf(NAN, 2), NAN);
+	
+	TestCaseDouble(ldexp(1.0, 1), 2.0);
+	TestCaseDouble(ldexp(1.0, 4), 16.0);
+	TestCaseDouble(ldexp(4.0, 1), 8.0);
+	TestCaseDouble(ldexp(3.14, 0), 3.14);
+	TestCaseDouble(ldexp(1.0, -1), 0.5);
+	TestCaseDouble(ldexp(1.0, -2), 0.25);
+	TestCaseDouble(ldexp(INFINITY, 2), INFINITY);
+	TestCaseDouble(ldexp(NAN, 2), NAN);
 	
 	TestCaseFloat(copysignf(112.0f, -1.0f), -112.0f);
 	TestCaseFloat(copysignf(112.0f, -INFINITY), -112.0f);

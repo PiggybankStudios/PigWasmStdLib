@@ -726,7 +726,7 @@ double exp_inline(double_t value, double_t valueTail, uint32_t sign_bias)
 	// double_t for better performance on targets with FLT_EVAL_METHOD==2.
 	double_t zVarShifted, zVar, rVar, rVarSquared, scale, tail, temp;
 	
-	valueTopBitsAbs = (top12(value) & 0x7ff);
+	valueTopBitsAbs = (top12(value) & 0x7FF);
 	if (predict_false(valueTopBitsAbs - top12(0x1p-54) >= top12(512.0) - top12(0x1p-54)))
 	{
 		if (valueTopBitsAbs - top12(0x1p-54) >= 0x80000000)
