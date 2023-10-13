@@ -162,6 +162,10 @@ uint32_t top16(double x)
 {
 	return asuint64(x) >> 48;
 }
+uint32_t top12(double value)
+{
+	return (asuint64(value) >> 52);
+}
 
 // +--------------------------------------------------------------+
 // |                        fmin and fmax                         |
@@ -1776,7 +1780,7 @@ double pow(double base, double exponent)
 			// Finite base < 0.
 			int exponentType = checkint64(exponentInt);
 			if (exponentType == 0) { return __math_invalid(base); }
-			if (exponentType == 1) { signBias = SIGN_BIAS; }
+			if (exponentType == 1) { signBias = expinline_SIGN_BIAS; }
 			baseInt &= 0x7FFFFFFFFFFFFFFF;
 			baseTop12 &= 0x7FF;
 		}

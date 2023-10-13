@@ -116,6 +116,8 @@ double __math_divzero(uint32_t sign);
 
 // Top 16 bits of a double.
 uint32_t top16(double x);
+// Top 12 bits of a double (sign and exponent bits).
+uint32_t top12(double value);
 
 float fp_barrierf(float x);
 double fp_barrier(double x);
@@ -271,6 +273,7 @@ double fp_barrier(double x)
 float __math_divzerof(uint32_t sign)
 double __math_divzero(uint32_t sign)
 uint32_t top16(double x)
+uint32_t top12(double value)
 float  fminf(float value1, float value2)
 double fmin(double value1, double value2)
 float  fmaxf(float value1, float value2)

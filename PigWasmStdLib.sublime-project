@@ -189,6 +189,7 @@
 			"long double fabsl(long double value)",
 			"long double fmodl(long double numer, long double denom)",
 			"long double scalbnl(long double value, int power)",
+			"uint32_t top12(double value)",
 			"uint32_t top16(double x)",
 			"unsigned __FLOAT_BITS(float value)",
 			"unsigned long long __DOUBLE_BITS(double value)",

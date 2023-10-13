@@ -8,14 +8,71 @@ Description:
 
 //NOTE: This file is only #inluded if !PIG_WASM_STD_USE_BUILTINS_POW
 
+// Returns 0 if not int, 1 if odd int, 2 if even int.  The argument is
+// the bit representation of a non-zero finite floating-point value.
+int checkint32(uint32_t floatInt)
+{
+	int exponent = ((floatInt >> 23) & 0xFF);
+	if (exponent < 0x7F)                                { return 0; }
+	if (exponent > 0x7F + 23)                           { return 2; }
+	if (floatInt & ((1 << (0x7F + 23 - exponent)) - 1)) { return 0; }
+	if (floatInt & (1 << (0x7F + 23 - exponent)))       { return 1; }
+	return 2;
+}
+int checkint64(uint64_t iy)
+{
+	int e = iy >> 52 & 0x7FF;
+	if (e < 0x3FF) { return 0; }
+	if (e > 0x3FF + 52) { return 2; }
+	if (iy & ((1ULL << (0x3FF + 52 - e)) - 1)) { return 0; }
+	if (iy & (1ULL << (0x3FF + 52 - e))) { return 1; }
+	return 2;
+}
+
+// Returns 1 if input is the bit representation of 0, infinity or nan.
+int zeroinfnan32(uint32_t floatInt)
+{
+	return ((2 * floatInt) - 1) >= ((2u * 0x7F800000) - 1);
+}
+int zeroinfnan64(uint64_t i)
+{
+	return ((2 * i) - 1) >= ((2 * asuint64(INFINITY)) - 1);
+}
+
+float __math_xflowf(uint32_t sign, float value)
+{
+	return eval_as_float(fp_barrierf(sign ? -value : value) * value);
+}
+double __math_xflow(uint32_t sign, double y)
+{
+	return eval_as_double(fp_barrier(sign ? -y : y) * y);
+}
+float __math_oflowf(uint32_t sign)
+{
+	return __math_xflowf(sign, 0x1p97F);
+}
+double __math_oflow(uint32_t sign)
+{
+	return __math_xflow(sign, 0x1p769);
+}
+float __math_uflowf(uint32_t sign)
+{
+	return __math_xflowf(sign, 0x1p-95F);
+}
+double __math_uflow(uint32_t sign)
+{
+	return __math_xflow(sign, 0x1p-767);
+}
+
 // +--------------------------------------------------------------+
 // |                  log2_inline and Constants                   |
 // +--------------------------------------------------------------+
-
 #define POWF_LOG2_TABLE_BITS 4
 #define POWF_LOG2_POLY_ORDER 5
+#define log2inline_N (1 << POWF_LOG2_TABLE_BITS)
 #define POWF_SCALE_BITS 0
 #define POWF_SCALE ((double)(1 << POWF_SCALE_BITS))
+
 const struct powf_log2_data
 {
 	struct
@@ -52,44 +109,43 @@ const struct powf_log2_data
 	}
 };
 
-#define log2inline_N (1 << POWF_LOG2_TABLE_BITS)
 #define log2inline_T __powf_log2_data.tab
 #define log2inline_A __powf_log2_data.poly
-#define log2inline_OFF 0x3f330000
+#define log2inline_OFF 0x3F330000
 
 // Subnormal input is normalized so ix has negative biased exponent.
 // Output is multiplied by log2inline_N (POWF_SCALE) if TOINT_INTRINICS is set.
-double_t log2_inline(uint32_t ix)
+double_t log2_inline(uint32_t floatInt)
 {
-	double_t z, r, r2, r4, p, q, y, y0, invc, logc;
-	uint32_t iz, top, tmp;
-	int k, i;
+	double_t zVar, rVar, rVarSquared, rVarQuad, polynomial, qVar, result, yVar, cInverse, logc;
+	uint32_t zVarInt, topBits, temp;
+	int vVar, index;
 	
-	// x = 2^k z; where z is in range [log2inline_OFF,2*log2inline_OFF] and exact.
+	// x = 2^vVar zVar; where zVar is in range [log2inline_OFF,2*log2inline_OFF] and exact.
 	// The range is split into log2inline_N subintervals.
-	// The ith subinterval contains z and c is near its center.
-	tmp = ix - log2inline_OFF;
-	i = (tmp >> (23 - POWF_LOG2_TABLE_BITS)) % log2inline_N;
-	top = tmp & 0xff800000;
-	iz = ix - top;
-	k = (int32_t)top >> (23 - POWF_SCALE_BITS); /* arithmetic shift */
-	invc = log2inline_T[i].invc;
-	logc = log2inline_T[i].logc;
-	z = (double_t)asfloat(iz);
+	// The ith subinterval contains zVar and c is near its center.
+	temp = floatInt - log2inline_OFF;
+	index = ((temp >> (23 - POWF_LOG2_TABLE_BITS)) % log2inline_N);
+	topBits = (temp & 0xFF800000);
+	zVarInt = floatInt - topBits;
+	vVar = ((int32_t)topBits >> (23 - POWF_SCALE_BITS)); /* arithmetic shift */
+	cInverse = log2inline_T[index].invc;
+	logc = log2inline_T[index].logc;
+	zVar = (double_t)asfloat(zVarInt);
 	
-	// log2(x) = log1p(z/c-1)/ln2 + log2(c) + k
-	r = z * invc - 1;
-	y0 = logc + (double_t)k;
+	// log2(x) = log1p(zVar/c-1)/ln2 + log2(c) + vVar
+	rVar = (zVar * cInverse) - 1;
+	yVar = logc + (double_t)vVar;
 	
-	// Pipelined polynomial evaluation to approximate log1p(r)/ln2.
-	r2 = r * r;
-	y = log2inline_A[0] * r + log2inline_A[1];
-	p = log2inline_A[2] * r + log2inline_A[3];
-	r4 = r2 * r2;
-	q = log2inline_A[4] * r + y0;
-	q = p * r2 + q;
-	y = y * r4 + q;
-	return y;
+	// Pipelined polynomial evaluation to approximate log1p(rVar)/ln2.
+	rVarSquared = rVar * rVar;
+	result = (log2inline_A[0] * rVar) + log2inline_A[1];
+	polynomial = (log2inline_A[2] * rVar) + log2inline_A[3];
+	rVarQuad = rVarSquared * rVarSquared;
+	qVar = (log2inline_A[4] * rVar) + yVar;
+	qVar = (polynomial * rVarSquared) + qVar;
+	result = (result * rVarQuad) + qVar;
+	return result;
 }
 
 // +--------------------------------------------------------------+
@@ -153,65 +209,19 @@ float exp2_inline(double_t value, uint32_t signBias)
 	// exp2(x) = 2^(k/N) * 2^rVar ~= s * (C0*rVar^3 + C1*rVar^2 + C2*rVar + 1)
 	tVarInt = exp2inline_T[ki % EXP2F_N];
 	ski = ki + signBias;
-	tVarInt += ski << (52 - EXP2F_TABLE_BITS);
+	tVarInt += (ski << (52 - EXP2F_TABLE_BITS));
 	tVar = asdouble(tVarInt);
-	zVar = exp2inline_C[0] * rVar + exp2inline_C[1];
+	zVar = (exp2inline_C[0] * rVar) + exp2inline_C[1];
 	rVarSquared = rVar * rVar;
-	result = exp2inline_C[2] * rVar + 1;
-	result = zVar * rVarSquared + result;
+	result = (exp2inline_C[2] * rVar) + 1;
+	result = (zVar * rVarSquared) + result;
 	result = result * tVar;
 	return eval_as_float(result);
 }
 
 // +--------------------------------------------------------------+
-// |                     powf Direct Helpers                      |
+// |                   log_inline and Constants                   |
 // +--------------------------------------------------------------+
-// Returns 0 if not int, 1 if odd int, 2 if even int.  The argument is
-// the bit representation of a non-zero finite floating-point value.
-int checkint32(uint32_t floatInt)
-{
-	int exponent = ((floatInt >> 23) & 0xFF);
-	if (exponent < 0x7F)                                { return 0; }
-	if (exponent > 0x7F + 23)                           { return 2; }
-	if (floatInt & ((1 << (0x7F + 23 - exponent)) - 1)) { return 0; }
-	if (floatInt & (1 << (0x7F + 23 - exponent)))       { return 1; }
-	return 2;
-}
-
-int zeroinfnan32(uint32_t floatInt)
-{
-	return ((2 * floatInt) - 1) >= ((2u * 0x7F800000) - 1);
-}
-
-float __math_xflowf(uint32_t sign, float value)
-{
-	return eval_as_float(fp_barrierf(sign ? -value : value) * value);
-}
-double __math_xflow(uint32_t sign, double y)
-{
-	return eval_as_double(fp_barrier(sign ? -y : y) * y);
-}
-float __math_oflowf(uint32_t sign)
-{
-	return __math_xflowf(sign, 0x1p97F);
-}
-double __math_oflow(uint32_t sign)
-{
-	return __math_xflow(sign, 0x1p769);
-}
-float __math_uflowf(uint32_t sign)
-{
-	return __math_xflowf(sign, 0x1p-95F);
-}
-double __math_uflow(uint32_t sign)
-{
-	return __math_xflow(sign, 0x1p-767);
-}
-
-// +--------------------------------------------------------------+
-// |                         pow Helpers                          |
-// +--------------------------------------------------------------+
-
 #define POW_LOG_TABLE_BITS 7
 #define POW_LOG_POLY_ORDER 8
 #define powlog_N (1 << POW_LOG_TABLE_BITS)
@@ -228,172 +238,169 @@ const struct pow_log_data
 	} tab[1 << POW_LOG_TABLE_BITS];
 } __pow_log_data =
 {
-	.ln2hi = 0x1.62e42fefa3800p-1,
-	.ln2lo = 0x1.ef35793c76730p-45,
-	.poly = {
-	// relative error: 0x1.11922ap-70
-	// in -0x1.6bp-8 0x1.6bp-8
-	// Coefficients are scaled to match the scaling during evaluation.
-	-0x1p-1,
-	0x1.555555555556p-2 * -2,
-	-0x1.0000000000006p-2 * -2,
-	0x1.999999959554ep-3 * 4,
-	-0x1.555555529a47ap-3 * 4,
-	0x1.2495b9b4845e9p-3 * -8,
-	-0x1.0002b8b263fc3p-3 * -8,
+	.ln2hi = 0x1.62E42FEFA3800p-1,
+	.ln2lo = 0x1.EF35793C76730p-45,
+	.poly =
+	{
+		// relative error: 0x1.11922ap-70
+		// in -0x1.6bp-8 0x1.6bp-8
+		// Coefficients are scaled to match the scaling during evaluation.
+		-0x1p-1,
+		 0x1.555555555556p-2  * -2,
+		-0x1.0000000000006p-2 * -2,
+		 0x1.999999959554Ep-3 *  4,
+		-0x1.555555529A47Ap-3 *  4,
+		 0x1.2495B9B4845E9p-3 * -8,
+		-0x1.0002B8B263FC3p-3 * -8,
 	},
-	/* Algorithm:
-
-		x = 2^k z
-		log(x) = k ln2 + log(c) + log(z/c)
-		log(z/c) = poly(z/c - 1)
-
-	where z is in [0x1.69555p-1; 0x1.69555p0] which is split into N subintervals
-	and z falls into the ith one, then table entries are computed as
-
-		tab[i].invc = 1/c
-		tab[i].logc = round(0x1p43*log(c))/0x1p43
-		tab[i].logctail = (double)(log(c) - logc)
-
-	where c is chosen near the center of the subinterval such that 1/c has only a
-	few precision bits so z/c - 1 is exactly representible as double:
-
-		1/c = center < 1 ? round(N/center)/N : round(2*N/center)/N/2
-
-	Note: |z/c - 1| < 1/N for the chosen c, |log(c) - logc - logctail| < 0x1p-97,
-	the last few bits of logc are rounded away so k*ln2hi + logc has no rounding
-	error and the interval for z is selected such that near x == 1, where log(x)
-	is tiny, large cancellation error is avoided in logc + poly(z/c - 1).  */
-	.tab = {
-	#define ABCD(a, b, c) {a, 0, b, c},
-	ABCD(0x1.6a00000000000p+0, -0x1.62c82f2b9c800p-2, 0x1.ab42428375680p-48)
-	ABCD(0x1.6800000000000p+0, -0x1.5d1bdbf580800p-2, -0x1.ca508d8e0f720p-46)
-	ABCD(0x1.6600000000000p+0, -0x1.5767717455800p-2, -0x1.362a4d5b6506dp-45)
-	ABCD(0x1.6400000000000p+0, -0x1.51aad872df800p-2, -0x1.684e49eb067d5p-49)
-	ABCD(0x1.6200000000000p+0, -0x1.4be5f95777800p-2, -0x1.41b6993293ee0p-47)
-	ABCD(0x1.6000000000000p+0, -0x1.4618bc21c6000p-2, 0x1.3d82f484c84ccp-46)
-	ABCD(0x1.5e00000000000p+0, -0x1.404308686a800p-2, 0x1.c42f3ed820b3ap-50)
-	ABCD(0x1.5c00000000000p+0, -0x1.3a64c55694800p-2, 0x1.0b1c686519460p-45)
-	ABCD(0x1.5a00000000000p+0, -0x1.347dd9a988000p-2, 0x1.5594dd4c58092p-45)
-	ABCD(0x1.5800000000000p+0, -0x1.2e8e2bae12000p-2, 0x1.67b1e99b72bd8p-45)
-	ABCD(0x1.5600000000000p+0, -0x1.2895a13de8800p-2, 0x1.5ca14b6cfb03fp-46)
-	ABCD(0x1.5600000000000p+0, -0x1.2895a13de8800p-2, 0x1.5ca14b6cfb03fp-46)
-	ABCD(0x1.5400000000000p+0, -0x1.22941fbcf7800p-2, -0x1.65a242853da76p-46)
-	ABCD(0x1.5200000000000p+0, -0x1.1c898c1699800p-2, -0x1.fafbc68e75404p-46)
-	ABCD(0x1.5000000000000p+0, -0x1.1675cababa800p-2, 0x1.f1fc63382a8f0p-46)
-	ABCD(0x1.4e00000000000p+0, -0x1.1058bf9ae4800p-2, -0x1.6a8c4fd055a66p-45)
-	ABCD(0x1.4c00000000000p+0, -0x1.0a324e2739000p-2, -0x1.c6bee7ef4030ep-47)
-	ABCD(0x1.4a00000000000p+0, -0x1.0402594b4d000p-2, -0x1.036b89ef42d7fp-48)
-	ABCD(0x1.4a00000000000p+0, -0x1.0402594b4d000p-2, -0x1.036b89ef42d7fp-48)
-	ABCD(0x1.4800000000000p+0, -0x1.fb9186d5e4000p-3, 0x1.d572aab993c87p-47)
-	ABCD(0x1.4600000000000p+0, -0x1.ef0adcbdc6000p-3, 0x1.b26b79c86af24p-45)
-	ABCD(0x1.4400000000000p+0, -0x1.e27076e2af000p-3, -0x1.72f4f543fff10p-46)
-	ABCD(0x1.4200000000000p+0, -0x1.d5c216b4fc000p-3, 0x1.1ba91bbca681bp-45)
-	ABCD(0x1.4000000000000p+0, -0x1.c8ff7c79aa000p-3, 0x1.7794f689f8434p-45)
-	ABCD(0x1.4000000000000p+0, -0x1.c8ff7c79aa000p-3, 0x1.7794f689f8434p-45)
-	ABCD(0x1.3e00000000000p+0, -0x1.bc286742d9000p-3, 0x1.94eb0318bb78fp-46)
-	ABCD(0x1.3c00000000000p+0, -0x1.af3c94e80c000p-3, 0x1.a4e633fcd9066p-52)
-	ABCD(0x1.3a00000000000p+0, -0x1.a23bc1fe2b000p-3, -0x1.58c64dc46c1eap-45)
-	ABCD(0x1.3a00000000000p+0, -0x1.a23bc1fe2b000p-3, -0x1.58c64dc46c1eap-45)
-	ABCD(0x1.3800000000000p+0, -0x1.9525a9cf45000p-3, -0x1.ad1d904c1d4e3p-45)
-	ABCD(0x1.3600000000000p+0, -0x1.87fa06520d000p-3, 0x1.bbdbf7fdbfa09p-45)
-	ABCD(0x1.3400000000000p+0, -0x1.7ab890210e000p-3, 0x1.bdb9072534a58p-45)
-	ABCD(0x1.3400000000000p+0, -0x1.7ab890210e000p-3, 0x1.bdb9072534a58p-45)
-	ABCD(0x1.3200000000000p+0, -0x1.6d60fe719d000p-3, -0x1.0e46aa3b2e266p-46)
-	ABCD(0x1.3000000000000p+0, -0x1.5ff3070a79000p-3, -0x1.e9e439f105039p-46)
-	ABCD(0x1.3000000000000p+0, -0x1.5ff3070a79000p-3, -0x1.e9e439f105039p-46)
-	ABCD(0x1.2e00000000000p+0, -0x1.526e5e3a1b000p-3, -0x1.0de8b90075b8fp-45)
-	ABCD(0x1.2c00000000000p+0, -0x1.44d2b6ccb8000p-3, 0x1.70cc16135783cp-46)
-	ABCD(0x1.2c00000000000p+0, -0x1.44d2b6ccb8000p-3, 0x1.70cc16135783cp-46)
-	ABCD(0x1.2a00000000000p+0, -0x1.371fc201e9000p-3, 0x1.178864d27543ap-48)
-	ABCD(0x1.2800000000000p+0, -0x1.29552f81ff000p-3, -0x1.48d301771c408p-45)
-	ABCD(0x1.2600000000000p+0, -0x1.1b72ad52f6000p-3, -0x1.e80a41811a396p-45)
-	ABCD(0x1.2600000000000p+0, -0x1.1b72ad52f6000p-3, -0x1.e80a41811a396p-45)
-	ABCD(0x1.2400000000000p+0, -0x1.0d77e7cd09000p-3, 0x1.a699688e85bf4p-47)
-	ABCD(0x1.2400000000000p+0, -0x1.0d77e7cd09000p-3, 0x1.a699688e85bf4p-47)
-	ABCD(0x1.2200000000000p+0, -0x1.fec9131dbe000p-4, -0x1.575545ca333f2p-45)
-	ABCD(0x1.2000000000000p+0, -0x1.e27076e2b0000p-4, 0x1.a342c2af0003cp-45)
-	ABCD(0x1.2000000000000p+0, -0x1.e27076e2b0000p-4, 0x1.a342c2af0003cp-45)
-	ABCD(0x1.1e00000000000p+0, -0x1.c5e548f5bc000p-4, -0x1.d0c57585fbe06p-46)
-	ABCD(0x1.1c00000000000p+0, -0x1.a926d3a4ae000p-4, 0x1.53935e85baac8p-45)
-	ABCD(0x1.1c00000000000p+0, -0x1.a926d3a4ae000p-4, 0x1.53935e85baac8p-45)
-	ABCD(0x1.1a00000000000p+0, -0x1.8c345d631a000p-4, 0x1.37c294d2f5668p-46)
-	ABCD(0x1.1a00000000000p+0, -0x1.8c345d631a000p-4, 0x1.37c294d2f5668p-46)
-	ABCD(0x1.1800000000000p+0, -0x1.6f0d28ae56000p-4, -0x1.69737c93373dap-45)
-	ABCD(0x1.1600000000000p+0, -0x1.51b073f062000p-4, 0x1.f025b61c65e57p-46)
-	ABCD(0x1.1600000000000p+0, -0x1.51b073f062000p-4, 0x1.f025b61c65e57p-46)
-	ABCD(0x1.1400000000000p+0, -0x1.341d7961be000p-4, 0x1.c5edaccf913dfp-45)
-	ABCD(0x1.1400000000000p+0, -0x1.341d7961be000p-4, 0x1.c5edaccf913dfp-45)
-	ABCD(0x1.1200000000000p+0, -0x1.16536eea38000p-4, 0x1.47c5e768fa309p-46)
-	ABCD(0x1.1000000000000p+0, -0x1.f0a30c0118000p-5, 0x1.d599e83368e91p-45)
-	ABCD(0x1.1000000000000p+0, -0x1.f0a30c0118000p-5, 0x1.d599e83368e91p-45)
-	ABCD(0x1.0e00000000000p+0, -0x1.b42dd71198000p-5, 0x1.c827ae5d6704cp-46)
-	ABCD(0x1.0e00000000000p+0, -0x1.b42dd71198000p-5, 0x1.c827ae5d6704cp-46)
-	ABCD(0x1.0c00000000000p+0, -0x1.77458f632c000p-5, -0x1.cfc4634f2a1eep-45)
-	ABCD(0x1.0c00000000000p+0, -0x1.77458f632c000p-5, -0x1.cfc4634f2a1eep-45)
-	ABCD(0x1.0a00000000000p+0, -0x1.39e87b9fec000p-5, 0x1.502b7f526feaap-48)
-	ABCD(0x1.0a00000000000p+0, -0x1.39e87b9fec000p-5, 0x1.502b7f526feaap-48)
-	ABCD(0x1.0800000000000p+0, -0x1.f829b0e780000p-6, -0x1.980267c7e09e4p-45)
-	ABCD(0x1.0800000000000p+0, -0x1.f829b0e780000p-6, -0x1.980267c7e09e4p-45)
-	ABCD(0x1.0600000000000p+0, -0x1.7b91b07d58000p-6, -0x1.88d5493faa639p-45)
-	ABCD(0x1.0400000000000p+0, -0x1.fc0a8b0fc0000p-7, -0x1.f1e7cf6d3a69cp-50)
-	ABCD(0x1.0400000000000p+0, -0x1.fc0a8b0fc0000p-7, -0x1.f1e7cf6d3a69cp-50)
-	ABCD(0x1.0200000000000p+0, -0x1.fe02a6b100000p-8, -0x1.9e23f0dda40e4p-46)
-	ABCD(0x1.0200000000000p+0, -0x1.fe02a6b100000p-8, -0x1.9e23f0dda40e4p-46)
-	ABCD(0x1.0000000000000p+0, 0x0.0000000000000p+0, 0x0.0000000000000p+0)
-	ABCD(0x1.0000000000000p+0, 0x0.0000000000000p+0, 0x0.0000000000000p+0)
-	ABCD(0x1.fc00000000000p-1, 0x1.0101575890000p-7, -0x1.0c76b999d2be8p-46)
-	ABCD(0x1.f800000000000p-1, 0x1.0205658938000p-6, -0x1.3dc5b06e2f7d2p-45)
-	ABCD(0x1.f400000000000p-1, 0x1.8492528c90000p-6, -0x1.aa0ba325a0c34p-45)
-	ABCD(0x1.f000000000000p-1, 0x1.0415d89e74000p-5, 0x1.111c05cf1d753p-47)
-	ABCD(0x1.ec00000000000p-1, 0x1.466aed42e0000p-5, -0x1.c167375bdfd28p-45)
-	ABCD(0x1.e800000000000p-1, 0x1.894aa149fc000p-5, -0x1.97995d05a267dp-46)
-	ABCD(0x1.e400000000000p-1, 0x1.ccb73cdddc000p-5, -0x1.a68f247d82807p-46)
-	ABCD(0x1.e200000000000p-1, 0x1.eea31c006c000p-5, -0x1.e113e4fc93b7bp-47)
-	ABCD(0x1.de00000000000p-1, 0x1.1973bd1466000p-4, -0x1.5325d560d9e9bp-45)
-	ABCD(0x1.da00000000000p-1, 0x1.3bdf5a7d1e000p-4, 0x1.cc85ea5db4ed7p-45)
-	ABCD(0x1.d600000000000p-1, 0x1.5e95a4d97a000p-4, -0x1.c69063c5d1d1ep-45)
-	ABCD(0x1.d400000000000p-1, 0x1.700d30aeac000p-4, 0x1.c1e8da99ded32p-49)
-	ABCD(0x1.d000000000000p-1, 0x1.9335e5d594000p-4, 0x1.3115c3abd47dap-45)
-	ABCD(0x1.cc00000000000p-1, 0x1.b6ac88dad6000p-4, -0x1.390802bf768e5p-46)
-	ABCD(0x1.ca00000000000p-1, 0x1.c885801bc4000p-4, 0x1.646d1c65aacd3p-45)
-	ABCD(0x1.c600000000000p-1, 0x1.ec739830a2000p-4, -0x1.dc068afe645e0p-45)
-	ABCD(0x1.c400000000000p-1, 0x1.fe89139dbe000p-4, -0x1.534d64fa10afdp-45)
-	ABCD(0x1.c000000000000p-1, 0x1.1178e8227e000p-3, 0x1.1ef78ce2d07f2p-45)
-	ABCD(0x1.be00000000000p-1, 0x1.1aa2b7e23f000p-3, 0x1.ca78e44389934p-45)
-	ABCD(0x1.ba00000000000p-1, 0x1.2d1610c868000p-3, 0x1.39d6ccb81b4a1p-47)
-	ABCD(0x1.b800000000000p-1, 0x1.365fcb0159000p-3, 0x1.62fa8234b7289p-51)
-	ABCD(0x1.b400000000000p-1, 0x1.4913d8333b000p-3, 0x1.5837954fdb678p-45)
-	ABCD(0x1.b200000000000p-1, 0x1.527e5e4a1b000p-3, 0x1.633e8e5697dc7p-45)
-	ABCD(0x1.ae00000000000p-1, 0x1.6574ebe8c1000p-3, 0x1.9cf8b2c3c2e78p-46)
-	ABCD(0x1.ac00000000000p-1, 0x1.6f0128b757000p-3, -0x1.5118de59c21e1p-45)
-	ABCD(0x1.aa00000000000p-1, 0x1.7898d85445000p-3, -0x1.c661070914305p-46)
-	ABCD(0x1.a600000000000p-1, 0x1.8beafeb390000p-3, -0x1.73d54aae92cd1p-47)
-	ABCD(0x1.a400000000000p-1, 0x1.95a5adcf70000p-3, 0x1.7f22858a0ff6fp-47)
-	ABCD(0x1.a000000000000p-1, 0x1.a93ed3c8ae000p-3, -0x1.8724350562169p-45)
-	ABCD(0x1.9e00000000000p-1, 0x1.b31d8575bd000p-3, -0x1.c358d4eace1aap-47)
-	ABCD(0x1.9c00000000000p-1, 0x1.bd087383be000p-3, -0x1.d4bc4595412b6p-45)
-	ABCD(0x1.9a00000000000p-1, 0x1.c6ffbc6f01000p-3, -0x1.1ec72c5962bd2p-48)
-	ABCD(0x1.9600000000000p-1, 0x1.db13db0d49000p-3, -0x1.aff2af715b035p-45)
-	ABCD(0x1.9400000000000p-1, 0x1.e530effe71000p-3, 0x1.212276041f430p-51)
-	ABCD(0x1.9200000000000p-1, 0x1.ef5ade4dd0000p-3, -0x1.a211565bb8e11p-51)
-	ABCD(0x1.9000000000000p-1, 0x1.f991c6cb3b000p-3, 0x1.bcbecca0cdf30p-46)
-	ABCD(0x1.8c00000000000p-1, 0x1.07138604d5800p-2, 0x1.89cdb16ed4e91p-48)
-	ABCD(0x1.8a00000000000p-1, 0x1.0c42d67616000p-2, 0x1.7188b163ceae9p-45)
-	ABCD(0x1.8800000000000p-1, 0x1.1178e8227e800p-2, -0x1.c210e63a5f01cp-45)
-	ABCD(0x1.8600000000000p-1, 0x1.16b5ccbacf800p-2, 0x1.b9acdf7a51681p-45)
-	ABCD(0x1.8400000000000p-1, 0x1.1bf99635a6800p-2, 0x1.ca6ed5147bdb7p-45)
-	ABCD(0x1.8200000000000p-1, 0x1.214456d0eb800p-2, 0x1.a87deba46baeap-47)
-	ABCD(0x1.7e00000000000p-1, 0x1.2bef07cdc9000p-2, 0x1.a9cfa4a5004f4p-45)
-	ABCD(0x1.7c00000000000p-1, 0x1.314f1e1d36000p-2, -0x1.8e27ad3213cb8p-45)
-	ABCD(0x1.7a00000000000p-1, 0x1.36b6776be1000p-2, 0x1.16ecdb0f177c8p-46)
-	ABCD(0x1.7800000000000p-1, 0x1.3c25277333000p-2, 0x1.83b54b606bd5cp-46)
-	ABCD(0x1.7600000000000p-1, 0x1.419b423d5e800p-2, 0x1.8e436ec90e09dp-47)
-	ABCD(0x1.7400000000000p-1, 0x1.4718dc271c800p-2, -0x1.f27ce0967d675p-45)
-	ABCD(0x1.7200000000000p-1, 0x1.4c9e09e173000p-2, -0x1.e20891b0ad8a4p-45)
-	ABCD(0x1.7000000000000p-1, 0x1.522ae0738a000p-2, 0x1.ebe708164c759p-45)
-	ABCD(0x1.6e00000000000p-1, 0x1.57bf753c8d000p-2, 0x1.fadedee5d40efp-46)
-	ABCD(0x1.6c00000000000p-1, 0x1.5d5bddf596000p-2, -0x1.a0b2a08a465dcp-47)
+	/*
+	Algorithm:
+			x = 2^k z
+			log(x) = k ln2 + log(c) + log(z/c)
+			log(z/c) = poly(z/c - 1)
+		where z is in [0x1.69555p-1; 0x1.69555p0] which is split into N subintervals
+		and z falls into the ith one, then table entries are computed as
+			tab[i].invc = 1/c
+			tab[i].logc = round(0x1p43*log(c))/0x1p43
+			tab[i].logctail = (double)(log(c) - logc)
+		where c is chosen near the center of the subinterval such that 1/c has only a
+		few precision bits so z/c - 1 is exactly representible as double:
+			1/c = center < 1 ? round(N/center)/N : round(2*N/center)/N/2
+		Note: |z/c - 1| < 1/N for the chosen c, |log(c) - logc - logctail| < 0x1p-97,
+		the last few bits of logc are rounded away so k*ln2hi + logc has no rounding
+		error and the interval for z is selected such that near x == 1, where log(x)
+		is tiny, large cancellation error is avoided in logc + poly(z/c - 1).
+	*/
+	.tab =
+	{
+		{ 0x1.6A00000000000p+0, 0, -0x1.62C82F2B9C800p-2,  0x1.AB42428375680p-48 },
+		{ 0x1.6800000000000p+0, 0, -0x1.5D1BDBF580800p-2, -0x1.CA508D8E0F720p-46 },
+		{ 0x1.6600000000000p+0, 0, -0x1.5767717455800p-2, -0x1.362A4D5B6506Dp-45 },
+		{ 0x1.6400000000000p+0, 0, -0x1.51AAD872DF800p-2, -0x1.684E49EB067D5p-49 },
+		{ 0x1.6200000000000p+0, 0, -0x1.4BE5F95777800p-2, -0x1.41B6993293EE0p-47 },
+		{ 0x1.6000000000000p+0, 0, -0x1.4618BC21C6000p-2,  0x1.3D82F484C84CCp-46 },
+		{ 0x1.5E00000000000p+0, 0, -0x1.404308686A800p-2,  0x1.C42F3ED820B3Ap-50 },
+		{ 0x1.5C00000000000p+0, 0, -0x1.3A64C55694800p-2,  0x1.0B1C686519460p-45 },
+		{ 0x1.5A00000000000p+0, 0, -0x1.347DD9A988000p-2,  0x1.5594DD4C58092p-45 },
+		{ 0x1.5800000000000p+0, 0, -0x1.2E8E2BAE12000p-2,  0x1.67B1E99B72BD8p-45 },
+		{ 0x1.5600000000000p+0, 0, -0x1.2895A13DE8800p-2,  0x1.5CA14B6CFB03Fp-46 },
+		{ 0x1.5600000000000p+0, 0, -0x1.2895A13DE8800p-2,  0x1.5CA14B6CFB03Fp-46 },
+		{ 0x1.5400000000000p+0, 0, -0x1.22941FBCF7800p-2, -0x1.65A242853DA76p-46 },
+		{ 0x1.5200000000000p+0, 0, -0x1.1C898C1699800p-2, -0x1.FAFBC68E75404p-46 },
+		{ 0x1.5000000000000p+0, 0, -0x1.1675CABABA800p-2,  0x1.F1FC63382A8F0p-46 },
+		{ 0x1.4E00000000000p+0, 0, -0x1.1058BF9AE4800p-2, -0x1.6A8C4FD055A66p-45 },
+		{ 0x1.4C00000000000p+0, 0, -0x1.0A324E2739000p-2, -0x1.C6BEE7EF4030Ep-47 },
+		{ 0x1.4A00000000000p+0, 0, -0x1.0402594B4D000p-2, -0x1.036B89EF42D7Fp-48 },
+		{ 0x1.4A00000000000p+0, 0, -0x1.0402594B4D000p-2, -0x1.036B89EF42D7Fp-48 },
+		{ 0x1.4800000000000p+0, 0, -0x1.FB9186D5E4000p-3,  0x1.D572AAB993C87p-47 },
+		{ 0x1.4600000000000p+0, 0, -0x1.EF0ADCBDC6000p-3,  0x1.B26B79C86AF24p-45 },
+		{ 0x1.4400000000000p+0, 0, -0x1.E27076E2AF000p-3, -0x1.72F4F543FFF10p-46 },
+		{ 0x1.4200000000000p+0, 0, -0x1.D5C216B4FC000p-3,  0x1.1BA91BBCA681Bp-45 },
+		{ 0x1.4000000000000p+0, 0, -0x1.C8FF7C79AA000p-3,  0x1.7794F689F8434p-45 },
+		{ 0x1.4000000000000p+0, 0, -0x1.C8FF7C79AA000p-3,  0x1.7794F689F8434p-45 },
+		{ 0x1.3E00000000000p+0, 0, -0x1.BC286742D9000p-3,  0x1.94EB0318BB78Fp-46 },
+		{ 0x1.3C00000000000p+0, 0, -0x1.AF3C94E80C000p-3,  0x1.A4E633FCD9066p-52 },
+		{ 0x1.3A00000000000p+0, 0, -0x1.A23BC1FE2B000p-3, -0x1.58C64DC46C1EAp-45 },
+		{ 0x1.3A00000000000p+0, 0, -0x1.A23BC1FE2B000p-3, -0x1.58C64DC46C1EAp-45 },
+		{ 0x1.3800000000000p+0, 0, -0x1.9525A9CF45000p-3, -0x1.AD1D904C1D4E3p-45 },
+		{ 0x1.3600000000000p+0, 0, -0x1.87FA06520D000p-3,  0x1.BBDBF7FDBFA09p-45 },
+		{ 0x1.3400000000000p+0, 0, -0x1.7AB890210E000p-3,  0x1.BDB9072534A58p-45 },
+		{ 0x1.3400000000000p+0, 0, -0x1.7AB890210E000p-3,  0x1.BDB9072534A58p-45 },
+		{ 0x1.3200000000000p+0, 0, -0x1.6D60FE719D000p-3, -0x1.0E46AA3B2E266p-46 },
+		{ 0x1.3000000000000p+0, 0, -0x1.5FF3070A79000p-3, -0x1.E9E439F105039p-46 },
+		{ 0x1.3000000000000p+0, 0, -0x1.5FF3070A79000p-3, -0x1.E9E439F105039p-46 },
+		{ 0x1.2E00000000000p+0, 0, -0x1.526E5E3A1B000p-3, -0x1.0DE8B90075B8Fp-45 },
+		{ 0x1.2C00000000000p+0, 0, -0x1.44D2B6CCB8000p-3,  0x1.70CC16135783Cp-46 },
+		{ 0x1.2C00000000000p+0, 0, -0x1.44D2B6CCB8000p-3,  0x1.70CC16135783Cp-46 },
+		{ 0x1.2A00000000000p+0, 0, -0x1.371FC201E9000p-3,  0x1.178864D27543Ap-48 },
+		{ 0x1.2800000000000p+0, 0, -0x1.29552F81FF000p-3, -0x1.48D301771C408p-45 },
+		{ 0x1.2600000000000p+0, 0, -0x1.1B72AD52F6000p-3, -0x1.E80A41811A396p-45 },
+		{ 0x1.2600000000000p+0, 0, -0x1.1B72AD52F6000p-3, -0x1.E80A41811A396p-45 },
+		{ 0x1.2400000000000p+0, 0, -0x1.0D77E7CD09000p-3,  0x1.A699688E85BF4p-47 },
+		{ 0x1.2400000000000p+0, 0, -0x1.0D77E7CD09000p-3,  0x1.A699688E85BF4p-47 },
+		{ 0x1.2200000000000p+0, 0, -0x1.FEC9131DBE000p-4, -0x1.575545CA333F2p-45 },
+		{ 0x1.2000000000000p+0, 0, -0x1.E27076E2B0000p-4,  0x1.A342C2AF0003Cp-45 },
+		{ 0x1.2000000000000p+0, 0, -0x1.E27076E2B0000p-4,  0x1.A342C2AF0003Cp-45 },
+		{ 0x1.1E00000000000p+0, 0, -0x1.C5E548F5BC000p-4, -0x1.D0C57585FBE06p-46 },
+		{ 0x1.1C00000000000p+0, 0, -0x1.A926D3A4AE000p-4,  0x1.53935E85BAAC8p-45 },
+		{ 0x1.1C00000000000p+0, 0, -0x1.A926D3A4AE000p-4,  0x1.53935E85BAAC8p-45 },
+		{ 0x1.1A00000000000p+0, 0, -0x1.8C345D631A000p-4,  0x1.37C294D2F5668p-46 },
+		{ 0x1.1A00000000000p+0, 0, -0x1.8C345D631A000p-4,  0x1.37C294D2F5668p-46 },
+		{ 0x1.1800000000000p+0, 0, -0x1.6F0D28AE56000p-4, -0x1.69737C93373DAp-45 },
+		{ 0x1.1600000000000p+0, 0, -0x1.51B073F062000p-4,  0x1.F025B61C65E57p-46 },
+		{ 0x1.1600000000000p+0, 0, -0x1.51B073F062000p-4,  0x1.F025B61C65E57p-46 },
+		{ 0x1.1400000000000p+0, 0, -0x1.341D7961BE000p-4,  0x1.C5EDACCF913DFp-45 },
+		{ 0x1.1400000000000p+0, 0, -0x1.341D7961BE000p-4,  0x1.C5EDACCF913DFp-45 },
+		{ 0x1.1200000000000p+0, 0, -0x1.16536EEA38000p-4,  0x1.47C5E768FA309p-46 },
+		{ 0x1.1000000000000p+0, 0, -0x1.F0A30C0118000p-5,  0x1.D599E83368E91p-45 },
+		{ 0x1.1000000000000p+0, 0, -0x1.F0A30C0118000p-5,  0x1.D599E83368E91p-45 },
+		{ 0x1.0E00000000000p+0, 0, -0x1.B42DD71198000p-5,  0x1.C827AE5D6704Cp-46 },
+		{ 0x1.0E00000000000p+0, 0, -0x1.B42DD71198000p-5,  0x1.C827AE5D6704Cp-46 },
+		{ 0x1.0C00000000000p+0, 0, -0x1.77458F632C000p-5, -0x1.CFC4634F2A1EEp-45 },
+		{ 0x1.0C00000000000p+0, 0, -0x1.77458F632C000p-5, -0x1.CFC4634F2A1EEp-45 },
+		{ 0x1.0A00000000000p+0, 0, -0x1.39E87B9FEC000p-5,  0x1.502B7F526FEAAp-48 },
+		{ 0x1.0A00000000000p+0, 0, -0x1.39E87B9FEC000p-5,  0x1.502B7F526FEAAp-48 },
+		{ 0x1.0800000000000p+0, 0, -0x1.F829B0E780000p-6, -0x1.980267C7E09E4p-45 },
+		{ 0x1.0800000000000p+0, 0, -0x1.F829B0E780000p-6, -0x1.980267C7E09E4p-45 },
+		{ 0x1.0600000000000p+0, 0, -0x1.7B91B07D58000p-6, -0x1.88D5493FAA639p-45 },
+		{ 0x1.0400000000000p+0, 0, -0x1.FC0A8B0FC0000p-7, -0x1.F1E7CF6D3A69Cp-50 },
+		{ 0x1.0400000000000p+0, 0, -0x1.FC0A8B0FC0000p-7, -0x1.F1E7CF6D3A69Cp-50 },
+		{ 0x1.0200000000000p+0, 0, -0x1.FE02A6B100000p-8, -0x1.9E23F0DDA40E4p-46 },
+		{ 0x1.0200000000000p+0, 0, -0x1.FE02A6B100000p-8, -0x1.9E23F0DDA40E4p-46 },
+		{ 0x1.0000000000000p+0, 0,  0x0.0000000000000p+0,  0x0.0000000000000p+0  },
+		{ 0x1.0000000000000p+0, 0,  0x0.0000000000000p+0,  0x0.0000000000000p+0  },
+		{ 0x1.FC00000000000p-1, 0,  0x1.0101575890000p-7, -0x1.0C76B999D2BE8p-46 },
+		{ 0x1.F800000000000p-1, 0,  0x1.0205658938000p-6, -0x1.3DC5B06E2F7D2p-45 },
+		{ 0x1.F400000000000p-1, 0,  0x1.8492528C90000p-6, -0x1.AA0BA325A0C34p-45 },
+		{ 0x1.F000000000000p-1, 0,  0x1.0415D89E74000p-5,  0x1.111C05CF1D753p-47 },
+		{ 0x1.EC00000000000p-1, 0,  0x1.466AED42E0000p-5, -0x1.C167375BDFD28p-45 },
+		{ 0x1.E800000000000p-1, 0,  0x1.894AA149FC000p-5, -0x1.97995D05A267Dp-46 },
+		{ 0x1.E400000000000p-1, 0,  0x1.CCB73CDDDC000p-5, -0x1.A68F247D82807p-46 },
+		{ 0x1.E200000000000p-1, 0,  0x1.EEA31C006C000p-5, -0x1.E113E4FC93B7Bp-47 },
+		{ 0x1.DE00000000000p-1, 0,  0x1.1973BD1466000p-4, -0x1.5325D560D9E9Bp-45 },
+		{ 0x1.DA00000000000p-1, 0,  0x1.3BDF5A7D1E000p-4,  0x1.CC85EA5DB4ED7p-45 },
+		{ 0x1.D600000000000p-1, 0,  0x1.5E95A4D97A000p-4, -0x1.C69063C5D1D1Ep-45 },
+		{ 0x1.D400000000000p-1, 0,  0x1.700D30AEAC000p-4,  0x1.C1E8DA99DED32p-49 },
+		{ 0x1.D000000000000p-1, 0,  0x1.9335E5D594000p-4,  0x1.3115C3ABD47DAp-45 },
+		{ 0x1.CC00000000000p-1, 0,  0x1.B6AC88DAD6000p-4, -0x1.390802BF768E5p-46 },
+		{ 0x1.CA00000000000p-1, 0,  0x1.C885801BC4000p-4,  0x1.646D1C65AACD3p-45 },
+		{ 0x1.C600000000000p-1, 0,  0x1.EC739830A2000p-4, -0x1.DC068AFE645E0p-45 },
+		{ 0x1.C400000000000p-1, 0,  0x1.FE89139DBE000p-4, -0x1.534D64FA10AFDp-45 },
+		{ 0x1.C000000000000p-1, 0,  0x1.1178E8227E000p-3,  0x1.1EF78CE2D07F2p-45 },
+		{ 0x1.BE00000000000p-1, 0,  0x1.1AA2B7E23F000p-3,  0x1.CA78E44389934p-45 },
+		{ 0x1.BA00000000000p-1, 0,  0x1.2D1610C868000p-3,  0x1.39D6CCB81B4A1p-47 },
+		{ 0x1.B800000000000p-1, 0,  0x1.365FCB0159000p-3,  0x1.62FA8234B7289p-51 },
+		{ 0x1.B400000000000p-1, 0,  0x1.4913D8333B000p-3,  0x1.5837954FDB678p-45 },
+		{ 0x1.B200000000000p-1, 0,  0x1.527E5E4A1B000p-3,  0x1.633E8E5697DC7p-45 },
+		{ 0x1.AE00000000000p-1, 0,  0x1.6574EBE8C1000p-3,  0x1.9CF8B2C3C2E78p-46 },
+		{ 0x1.AC00000000000p-1, 0,  0x1.6F0128B757000p-3, -0x1.5118DE59C21E1p-45 },
+		{ 0x1.AA00000000000p-1, 0,  0x1.7898D85445000p-3, -0x1.C661070914305p-46 },
+		{ 0x1.A600000000000p-1, 0,  0x1.8BEAFEB390000p-3, -0x1.73D54AAE92CD1p-47 },
+		{ 0x1.A400000000000p-1, 0,  0x1.95A5ADCF70000p-3,  0x1.7F22858A0FF6Fp-47 },
+		{ 0x1.A000000000000p-1, 0,  0x1.A93ED3C8AE000p-3, -0x1.8724350562169p-45 },
+		{ 0x1.9E00000000000p-1, 0,  0x1.B31D8575BD000p-3, -0x1.C358D4EACE1AAp-47 },
+		{ 0x1.9C00000000000p-1, 0,  0x1.BD087383BE000p-3, -0x1.D4BC4595412B6p-45 },
+		{ 0x1.9A00000000000p-1, 0,  0x1.C6FFBC6F01000p-3, -0x1.1EC72C5962BD2p-48 },
+		{ 0x1.9600000000000p-1, 0,  0x1.DB13DB0D49000p-3, -0x1.AFF2AF715B035p-45 },
+		{ 0x1.9400000000000p-1, 0,  0x1.E530EFFE71000p-3,  0x1.212276041F430p-51 },
+		{ 0x1.9200000000000p-1, 0,  0x1.EF5ADE4DD0000p-3, -0x1.A211565BB8E11p-51 },
+		{ 0x1.9000000000000p-1, 0,  0x1.F991C6CB3B000p-3,  0x1.BCBECCA0CDF30p-46 },
+		{ 0x1.8C00000000000p-1, 0,  0x1.07138604D5800p-2,  0x1.89CDB16ED4E91p-48 },
+		{ 0x1.8A00000000000p-1, 0,  0x1.0C42D67616000p-2,  0x1.7188B163CEAE9p-45 },
+		{ 0x1.8800000000000p-1, 0,  0x1.1178E8227E800p-2, -0x1.C210E63A5F01Cp-45 },
+		{ 0x1.8600000000000p-1, 0,  0x1.16B5CCBACF800p-2,  0x1.B9ACDF7A51681p-45 },
+		{ 0x1.8400000000000p-1, 0,  0x1.1BF99635A6800p-2,  0x1.CA6ED5147BDB7p-45 },
+		{ 0x1.8200000000000p-1, 0,  0x1.214456D0EB800p-2,  0x1.A87DEBA46BAEAp-47 },
+		{ 0x1.7E00000000000p-1, 0,  0x1.2BEF07CDC9000p-2,  0x1.A9CFA4A5004F4p-45 },
+		{ 0x1.7C00000000000p-1, 0,  0x1.314F1E1D36000p-2, -0x1.8E27AD3213CB8p-45 },
+		{ 0x1.7A00000000000p-1, 0,  0x1.36B6776BE1000p-2,  0x1.16ECDB0F177C8p-46 },
+		{ 0x1.7800000000000p-1, 0,  0x1.3C25277333000p-2,  0x1.83B54B606BD5Cp-46 },
+		{ 0x1.7600000000000p-1, 0,  0x1.419B423D5E800p-2,  0x1.8E436EC90E09Dp-47 },
+		{ 0x1.7400000000000p-1, 0,  0x1.4718DC271C800p-2, -0x1.F27CE0967D675p-45 },
+		{ 0x1.7200000000000p-1, 0,  0x1.4C9E09E173000p-2, -0x1.E20891B0AD8A4p-45 },
+		{ 0x1.7000000000000p-1, 0,  0x1.522AE0738A000p-2,  0x1.EBE708164C759p-45 },
+		{ 0x1.6E00000000000p-1, 0,  0x1.57BF753C8D000p-2,  0x1.FADEDEE5D40EFp-46 },
+		{ 0x1.6C00000000000p-1, 0,  0x1.5D5BDDF596000p-2, -0x1.A0B2A08A465DCp-47 },
 	},
 };
 
@@ -403,70 +410,64 @@ const struct pow_log_data
 #define powlog_Ln2lo __pow_log_data.ln2lo
 #define powlog_OFF 0x3fe6955500000000
 
-// Top 12 bits of a double (sign and exponent bits).
-uint32_t top12(double value)
-{
-	return (asuint64(value) >> 52);
-}
-
 // Compute y+TAIL = log(x) where the rounded result is y and TAIL has about
 // additional 15 bits precision.  IX is the bit representation of x, but
 // normalized in the subnormal range using the sign bit for the exponent.
-double_t log_inline(uint64_t ix, double_t *tail)
+double_t log_inline(uint64_t doubleInt, double_t* tail)
 {
 	// double_t for better performance on targets with FLT_EVAL_METHOD==2.
-	double_t z, r, y, invc, logc, logctail, kd, hi, t1, t2, lo, lo1, lo2, p;
-	uint64_t iz, tmp;
-	int k, i;
+	double_t zVar, result, invc, logc, logctail, vVar, resultHigh, tVar1, tVar2, resultLow, p;
+	double_t lowPart1, lowPart2, lowPart3, lowPart4;
+	double_t rVar, arVar, arVarSquared, arVarCubed;
+	uint64_t zVarInt, temp;
+	int vVarInt, index;
 	
-	// x = 2^k z; where z is in range [OFF,2*OFF) and exact.
+	// x = 2^vVar zVar; where zVar is in range [OFF,2*OFF) and exact.
 	// The range is split into N subintervals.
-	// The ith subinterval contains z and c is near its center.
-	tmp = ix - powlog_OFF;
-	i = (tmp >> (52 - POW_LOG_TABLE_BITS)) % powlog_N;
-	k = (int64_t)tmp >> 52; // arithmetic shif
-	iz = ix - (tmp & 0xfffULL << 52);
-	z = asdouble(iz);
-	kd = (double_t)k;
+	// The ith subinterval contains zVar and c is near its center.
+	temp = doubleInt - powlog_OFF;
+	index = ((temp >> (52 - POW_LOG_TABLE_BITS)) % powlog_N);
+	vVarInt = (int64_t)temp >> 52; // arithmetic shift
+	zVarInt = doubleInt - (temp & 0xfffULL << 52);
+	zVar = asdouble(zVarInt);
+	vVar = (double_t)vVarInt;
 	
-	// log(x) = k*Ln2 + log(c) + log1p(z/c-1).
-	invc = powlog_T[i].invc;
-	logc = powlog_T[i].logc;
-	logctail = powlog_T[i].logctail;
+	// log(x) = vVar*Ln2 + log(c) + log1p(zVar/c-1).
+	invc = powlog_T[index].invc;
+	logc = powlog_T[index].logc;
+	logctail = powlog_T[index].logctail;
 	
 	// Note: 1/c is j/N or j/N/2 where j is an integer in [N,2N) and
-    // |z/c - 1| < 1/N, so r = z/c - 1 is exactly representible.
-	// Split z such that rhi, rlo and rhi*rhi are exact and |rlo| <= |r|.
-	double_t zhi = asdouble((iz + (1ULL << 31)) & (-1ULL << 32));
-	double_t zlo = z - zhi;
+    // |zVar/c - 1| < 1/N, so rVar = zVar/c - 1 is exactly representible.
+	// Split zVar such that rhi, rlo and rhi*rhi are exact and |rlo| <= |rVar|.
+	double_t zhi = asdouble((zVarInt + (1ULL << 31)) & (-1ULL << 32));
+	double_t zlo = zVar - zhi;
 	double_t rhi = zhi * invc - 1.0;
 	double_t rlo = zlo * invc;
-	r = rhi + rlo;
+	rVar = rhi + rlo;
 	
-	// k*Ln2 + log(c) + r.
-	t1 = kd * powlog_Ln2hi + logc;
-	t2 = t1 + r;
-	lo1 = kd * powlog_Ln2lo + logctail;
-	lo2 = t1 - t2 + r;
+	// vVar*Ln2 + log(c) + rVar.
+	tVar1 = (vVar * powlog_Ln2hi) + logc;
+	tVar2 = tVar1 + rVar;
+	lowPart1 = (vVar * powlog_Ln2lo) + logctail;
+	lowPart2 = tVar1 - tVar2 + rVar;
 	
 	// Evaluation is optimized assuming superscalar pipelined execution.
-	double_t ar, ar2, ar3, lo3, lo4;
-	ar = powlog_A[0] * r; // A[0] = -0.5.
-	ar2 = r * ar;
-	ar3 = r * ar2;
-	// k*Ln2 + log(c) + r + A[0]*r*r.
+	arVar = powlog_A[0] * rVar; // A[0] = -0.5.
+	arVarSquared = rVar * arVar;
+	arVarCubed = rVar * arVarSquared;
+	// vVar*Ln2 + log(c) + rVar + A[0]*rVar*rVar.
 	double_t arhi = powlog_A[0] * rhi;
 	double_t arhi2 = rhi * arhi;
-	hi = t2 + arhi2;
-	lo3 = rlo * (ar + arhi);
-	lo4 = t2 - hi + arhi2;
-	// p = log1p(r) - r - A[0]*r*r.
-	p = (ar3 * (powlog_A[1] + r * powlog_A[2] +
-		    ar2 * (powlog_A[3] + r * powlog_A[4] + ar2 * (powlog_A[5] + r * powlog_A[6]))));
-	lo = lo1 + lo2 + lo3 + lo4 + p;
-	y = hi + lo;
-	*tail = hi - y + lo;
-	return y;
+	resultHigh = tVar2 + arhi2;
+	lowPart3 = rlo * (arVar + arhi);
+	lowPart4 = tVar2 - resultHigh + arhi2;
+	// p = log1p(rVar) - rVar - A[0]*rVar*rVar.
+	p = (arVarCubed * (powlog_A[1] + rVar * powlog_A[2] + arVarSquared * (powlog_A[3] + rVar * powlog_A[4] + arVarSquared * (powlog_A[5] + rVar * powlog_A[6]))));
+	resultLow = lowPart1 + lowPart2 + lowPart3 + lowPart4 + p;
+	result = resultHigh + resultLow;
+	*tail = resultHigh - result + resultLow;
+	return result;
 }
 
 
@@ -489,169 +490,172 @@ const struct exp_data
 } __exp_data =
 {
 	// N/ln2
-	.invln2N = 0x1.71547652b82fep0 * expinline_N,
+	.invln2N = 0x1.71547652B82FEp0 * expinline_N,
 	// -ln2/N
-	.negln2hiN = -0x1.62e42fefa0000p-8,
-	.negln2loN = -0x1.cf79abc9e3b3ap-47,
+	.negln2hiN = -0x1.62E42FEFA0000p-8,
+	.negln2loN = -0x1.CF79ABC9E3B3Ap-47,
 	// Used for rounding when !TOINT_INTRINSICS
 	.shift = 0x1.8p52,
 	// exp polynomial coefficients.
-	.poly = {
-	// abs error: 1.555*2^-66
-	// ulp error: 0.509 (0.511 without fma)
-	// if |x| < ln2/256+eps
-	// abs error if |x| < ln2/256+0x1p-15: 1.09*2^-65
-	// abs error if |x| < ln2/128: 1.7145*2^-56
-	0x1.ffffffffffdbdp-2,
-	0x1.555555555543cp-3,
-	0x1.55555cf172b91p-5,
-	0x1.1111167a4d017p-7,
+	.poly =
+	{
+		// abs error: 1.555*2^-66
+		// ulp error: 0.509 (0.511 without fma)
+		// if |x| < ln2/256+eps
+		// abs error if |x| < ln2/256+0x1p-15: 1.09*2^-65
+		// abs error if |x| < ln2/128: 1.7145*2^-56
+		0x1.FFFFFFFFFFDBDp-2,
+		0x1.555555555543Cp-3,
+		0x1.55555CF172B91p-5,
+		0x1.1111167A4D017p-7,
 	},
 	.exp2_shift = 0x1.8p52 / expinline_N,
 	// exp2 polynomial coefficients.
-	.exp2_poly = {
-	// abs error: 1.2195*2^-65
-	// ulp error: 0.507 (0.511 without fma)
-	// if |x| < 1/256
-	// abs error if |x| < 1/128: 1.9941*2^-56
-	0x1.62e42fefa39efp-1,
-	0x1.ebfbdff82c424p-3,
-	0x1.c6b08d70cf4b5p-5,
-	0x1.3b2abd24650ccp-7,
-	0x1.5d7e09b4e3a84p-10,
+	.exp2_poly =
+	{
+		// abs error: 1.2195*2^-65
+		// ulp error: 0.507 (0.511 without fma)
+		// if |x| < 1/256
+		// abs error if |x| < 1/128: 1.9941*2^-56
+		0x1.62E42FEFA39EFp-1,
+		0x1.EBFBDFF82C424p-3,
+		0x1.C6B08D70CF4B5p-5,
+		0x1.3B2ABD24650CCp-7,
+		0x1.5D7E09B4E3A84p-10,
 	},
 	// 2^(k/N) ~= H[k]*(1 + T[k]) for int k in [0,N)
 	// tab[2*k] = asuint64(T[k])
 	// tab[2*k+1] = asuint64(H[k]) - (k << 52)/N
-	.tab = {
-	0x0, 0x3ff0000000000000,
-	0x3c9b3b4f1a88bf6e, 0x3feff63da9fb3335,
-	0xbc7160139cd8dc5d, 0x3fefec9a3e778061,
-	0xbc905e7a108766d1, 0x3fefe315e86e7f85,
-	0x3c8cd2523567f613, 0x3fefd9b0d3158574,
-	0xbc8bce8023f98efa, 0x3fefd06b29ddf6de,
-	0x3c60f74e61e6c861, 0x3fefc74518759bc8,
-	0x3c90a3e45b33d399, 0x3fefbe3ecac6f383,
-	0x3c979aa65d837b6d, 0x3fefb5586cf9890f,
-	0x3c8eb51a92fdeffc, 0x3fefac922b7247f7,
-	0x3c3ebe3d702f9cd1, 0x3fefa3ec32d3d1a2,
-	0xbc6a033489906e0b, 0x3fef9b66affed31b,
-	0xbc9556522a2fbd0e, 0x3fef9301d0125b51,
-	0xbc5080ef8c4eea55, 0x3fef8abdc06c31cc,
-	0xbc91c923b9d5f416, 0x3fef829aaea92de0,
-	0x3c80d3e3e95c55af, 0x3fef7a98c8a58e51,
-	0xbc801b15eaa59348, 0x3fef72b83c7d517b,
-	0xbc8f1ff055de323d, 0x3fef6af9388c8dea,
-	0x3c8b898c3f1353bf, 0x3fef635beb6fcb75,
-	0xbc96d99c7611eb26, 0x3fef5be084045cd4,
-	0x3c9aecf73e3a2f60, 0x3fef54873168b9aa,
-	0xbc8fe782cb86389d, 0x3fef4d5022fcd91d,
-	0x3c8a6f4144a6c38d, 0x3fef463b88628cd6,
-	0x3c807a05b0e4047d, 0x3fef3f49917ddc96,
-	0x3c968efde3a8a894, 0x3fef387a6e756238,
-	0x3c875e18f274487d, 0x3fef31ce4fb2a63f,
-	0x3c80472b981fe7f2, 0x3fef2b4565e27cdd,
-	0xbc96b87b3f71085e, 0x3fef24dfe1f56381,
-	0x3c82f7e16d09ab31, 0x3fef1e9df51fdee1,
-	0xbc3d219b1a6fbffa, 0x3fef187fd0dad990,
-	0x3c8b3782720c0ab4, 0x3fef1285a6e4030b,
-	0x3c6e149289cecb8f, 0x3fef0cafa93e2f56,
-	0x3c834d754db0abb6, 0x3fef06fe0a31b715,
-	0x3c864201e2ac744c, 0x3fef0170fc4cd831,
-	0x3c8fdd395dd3f84a, 0x3feefc08b26416ff,
-	0xbc86a3803b8e5b04, 0x3feef6c55f929ff1,
-	0xbc924aedcc4b5068, 0x3feef1a7373aa9cb,
-	0xbc9907f81b512d8e, 0x3feeecae6d05d866,
-	0xbc71d1e83e9436d2, 0x3feee7db34e59ff7,
-	0xbc991919b3ce1b15, 0x3feee32dc313a8e5,
-	0x3c859f48a72a4c6d, 0x3feedea64c123422,
-	0xbc9312607a28698a, 0x3feeda4504ac801c,
-	0xbc58a78f4817895b, 0x3feed60a21f72e2a,
-	0xbc7c2c9b67499a1b, 0x3feed1f5d950a897,
-	0x3c4363ed60c2ac11, 0x3feece086061892d,
-	0x3c9666093b0664ef, 0x3feeca41ed1d0057,
-	0x3c6ecce1daa10379, 0x3feec6a2b5c13cd0,
-	0x3c93ff8e3f0f1230, 0x3feec32af0d7d3de,
-	0x3c7690cebb7aafb0, 0x3feebfdad5362a27,
-	0x3c931dbdeb54e077, 0x3feebcb299fddd0d,
-	0xbc8f94340071a38e, 0x3feeb9b2769d2ca7,
-	0xbc87deccdc93a349, 0x3feeb6daa2cf6642,
-	0xbc78dec6bd0f385f, 0x3feeb42b569d4f82,
-	0xbc861246ec7b5cf6, 0x3feeb1a4ca5d920f,
-	0x3c93350518fdd78e, 0x3feeaf4736b527da,
-	0x3c7b98b72f8a9b05, 0x3feead12d497c7fd,
-	0x3c9063e1e21c5409, 0x3feeab07dd485429,
-	0x3c34c7855019c6ea, 0x3feea9268a5946b7,
-	0x3c9432e62b64c035, 0x3feea76f15ad2148,
-	0xbc8ce44a6199769f, 0x3feea5e1b976dc09,
-	0xbc8c33c53bef4da8, 0x3feea47eb03a5585,
-	0xbc845378892be9ae, 0x3feea34634ccc320,
-	0xbc93cedd78565858, 0x3feea23882552225,
-	0x3c5710aa807e1964, 0x3feea155d44ca973,
-	0xbc93b3efbf5e2228, 0x3feea09e667f3bcd,
-	0xbc6a12ad8734b982, 0x3feea012750bdabf,
-	0xbc6367efb86da9ee, 0x3fee9fb23c651a2f,
-	0xbc80dc3d54e08851, 0x3fee9f7df9519484,
-	0xbc781f647e5a3ecf, 0x3fee9f75e8ec5f74,
-	0xbc86ee4ac08b7db0, 0x3fee9f9a48a58174,
-	0xbc8619321e55e68a, 0x3fee9feb564267c9,
-	0x3c909ccb5e09d4d3, 0x3feea0694fde5d3f,
-	0xbc7b32dcb94da51d, 0x3feea11473eb0187,
-	0x3c94ecfd5467c06b, 0x3feea1ed0130c132,
-	0x3c65ebe1abd66c55, 0x3feea2f336cf4e62,
-	0xbc88a1c52fb3cf42, 0x3feea427543e1a12,
-	0xbc9369b6f13b3734, 0x3feea589994cce13,
-	0xbc805e843a19ff1e, 0x3feea71a4623c7ad,
-	0xbc94d450d872576e, 0x3feea8d99b4492ed,
-	0x3c90ad675b0e8a00, 0x3feeaac7d98a6699,
-	0x3c8db72fc1f0eab4, 0x3feeace5422aa0db,
-	0xbc65b6609cc5e7ff, 0x3feeaf3216b5448c,
-	0x3c7bf68359f35f44, 0x3feeb1ae99157736,
-	0xbc93091fa71e3d83, 0x3feeb45b0b91ffc6,
-	0xbc5da9b88b6c1e29, 0x3feeb737b0cdc5e5,
-	0xbc6c23f97c90b959, 0x3feeba44cbc8520f,
-	0xbc92434322f4f9aa, 0x3feebd829fde4e50,
-	0xbc85ca6cd7668e4b, 0x3feec0f170ca07ba,
-	0x3c71affc2b91ce27, 0x3feec49182a3f090,
-	0x3c6dd235e10a73bb, 0x3feec86319e32323,
-	0xbc87c50422622263, 0x3feecc667b5de565,
-	0x3c8b1c86e3e231d5, 0x3feed09bec4a2d33,
-	0xbc91bbd1d3bcbb15, 0x3feed503b23e255d,
-	0x3c90cc319cee31d2, 0x3feed99e1330b358,
-	0x3c8469846e735ab3, 0x3feede6b5579fdbf,
-	0xbc82dfcd978e9db4, 0x3feee36bbfd3f37a,
-	0x3c8c1a7792cb3387, 0x3feee89f995ad3ad,
-	0xbc907b8f4ad1d9fa, 0x3feeee07298db666,
-	0xbc55c3d956dcaeba, 0x3feef3a2b84f15fb,
-	0xbc90a40e3da6f640, 0x3feef9728de5593a,
-	0xbc68d6f438ad9334, 0x3feeff76f2fb5e47,
-	0xbc91eee26b588a35, 0x3fef05b030a1064a,
-	0x3c74ffd70a5fddcd, 0x3fef0c1e904bc1d2,
-	0xbc91bdfbfa9298ac, 0x3fef12c25bd71e09,
-	0x3c736eae30af0cb3, 0x3fef199bdd85529c,
-	0x3c8ee3325c9ffd94, 0x3fef20ab5fffd07a,
-	0x3c84e08fd10959ac, 0x3fef27f12e57d14b,
-	0x3c63cdaf384e1a67, 0x3fef2f6d9406e7b5,
-	0x3c676b2c6c921968, 0x3fef3720dcef9069,
-	0xbc808a1883ccb5d2, 0x3fef3f0b555dc3fa,
-	0xbc8fad5d3ffffa6f, 0x3fef472d4a07897c,
-	0xbc900dae3875a949, 0x3fef4f87080d89f2,
-	0x3c74a385a63d07a7, 0x3fef5818dcfba487,
-	0xbc82919e2040220f, 0x3fef60e316c98398,
-	0x3c8e5a50d5c192ac, 0x3fef69e603db3285,
-	0x3c843a59ac016b4b, 0x3fef7321f301b460,
-	0xbc82d52107b43e1f, 0x3fef7c97337b9b5f,
-	0xbc892ab93b470dc9, 0x3fef864614f5a129,
-	0x3c74b604603a88d3, 0x3fef902ee78b3ff6,
-	0x3c83c5ec519d7271, 0x3fef9a51fbc74c83,
-	0xbc8ff7128fd391f0, 0x3fefa4afa2a490da,
-	0xbc8dae98e223747d, 0x3fefaf482d8e67f1,
-	0x3c8ec3bc41aa2008, 0x3fefba1bee615a27,
-	0x3c842b94c3a9eb32, 0x3fefc52b376bba97,
-	0x3c8a64a931d185ee, 0x3fefd0765b6e4540,
-	0xbc8e37bae43be3ed, 0x3fefdbfdad9cbe14,
-	0x3c77893b4d91cd9d, 0x3fefe7c1819e90d8,
-	0x3c5305c14160cc89, 0x3feff3c22b8f71f1,
+	.tab =
+	{
+		0x0,                0x3FF0000000000000,
+		0x3C9B3B4F1A88BF6E, 0x3FEFF63DA9FB3335,
+		0xBC7160139CD8DC5D, 0x3FEFEC9A3E778061,
+		0xBC905E7A108766D1, 0x3FEFE315E86E7F85,
+		0x3C8CD2523567F613, 0x3FEFD9B0D3158574,
+		0xBC8BCE8023F98EFA, 0x3FEFD06B29DDF6DE,
+		0x3C60F74E61E6C861, 0x3FEFC74518759BC8,
+		0x3C90A3E45B33D399, 0x3FEFBE3ECAC6F383,
+		0x3C979AA65D837B6D, 0x3FEFB5586CF9890F,
+		0x3C8EB51A92FDEFFC, 0x3FEFAC922B7247F7,
+		0x3C3EBE3D702F9CD1, 0x3FEFA3EC32D3D1A2,
+		0xBC6A033489906E0B, 0x3FEF9B66AFFED31B,
+		0xBC9556522A2FBD0E, 0x3FEF9301D0125B51,
+		0xBC5080EF8C4EEA55, 0x3FEF8ABDC06C31CC,
+		0xBC91C923B9D5F416, 0x3FEF829AAEA92DE0,
+		0x3C80D3E3E95C55AF, 0x3FEF7A98C8A58E51,
+		0xBC801B15EAA59348, 0x3FEF72B83C7D517B,
+		0xBC8F1FF055DE323D, 0x3FEF6AF9388C8DEA,
+		0x3C8B898C3F1353BF, 0x3FEF635BEB6FCB75,
+		0xBC96D99C7611EB26, 0x3FEF5BE084045CD4,
+		0x3C9AECF73E3A2F60, 0x3FEF54873168B9AA,
+		0xBC8FE782CB86389D, 0x3FEF4D5022FCD91D,
+		0x3C8A6F4144A6C38D, 0x3FEF463B88628CD6,
+		0x3C807A05B0E4047D, 0x3FEF3F49917DDC96,
+		0x3C968EFDE3A8A894, 0x3FEF387A6E756238,
+		0x3C875E18F274487D, 0x3FEF31CE4FB2A63F,
+		0x3C80472B981FE7F2, 0x3FEF2B4565E27CDD,
+		0xBC96B87B3F71085E, 0x3FEF24DFE1F56381,
+		0x3C82F7E16D09AB31, 0x3FEF1E9DF51FDEE1,
+		0xBC3D219B1A6FBFFA, 0x3FEF187FD0DAD990,
+		0x3C8B3782720C0AB4, 0x3FEF1285A6E4030B,
+		0x3C6E149289CECB8F, 0x3FEF0CAFA93E2F56,
+		0x3C834D754DB0ABB6, 0x3FEF06FE0A31B715,
+		0x3C864201E2AC744C, 0x3FEF0170FC4CD831,
+		0x3C8FDD395DD3F84A, 0x3FEEFC08B26416FF,
+		0xBC86A3803B8E5B04, 0x3FEEF6C55F929FF1,
+		0xBC924AEDCC4B5068, 0x3FEEF1A7373AA9CB,
+		0xBC9907F81B512D8E, 0x3FEEECAE6D05D866,
+		0xBC71D1E83E9436D2, 0x3FEEE7DB34E59FF7,
+		0xBC991919B3CE1B15, 0x3FEEE32DC313A8E5,
+		0x3C859F48A72A4C6D, 0x3FEEDEA64C123422,
+		0xBC9312607A28698A, 0x3FEEDA4504AC801C,
+		0xBC58A78F4817895B, 0x3FEED60A21F72E2A,
+		0xBC7C2C9B67499A1B, 0x3FEED1F5D950A897,
+		0x3C4363ED60C2AC11, 0x3FEECE086061892D,
+		0x3C9666093B0664EF, 0x3FEECA41ED1D0057,
+		0x3C6ECCE1DAA10379, 0x3FEEC6A2B5C13CD0,
+		0x3C93FF8E3F0F1230, 0x3FEEC32AF0D7D3DE,
+		0x3C7690CEBB7AAFB0, 0x3FEEBFDAD5362A27,
+		0x3C931DBDEB54E077, 0x3FEEBCB299FDDD0D,
+		0xBC8F94340071A38E, 0x3FEEB9B2769D2CA7,
+		0xBC87DECCDC93A349, 0x3FEEB6DAA2CF6642,
+		0xBC78DEC6BD0F385F, 0x3FEEB42B569D4F82,
+		0xBC861246EC7B5CF6, 0x3FEEB1A4CA5D920F,
+		0x3C93350518FDD78E, 0x3FEEAF4736B527DA,
+		0x3C7B98B72F8A9B05, 0x3FEEAD12D497C7FD,
+		0x3C9063E1E21C5409, 0x3FEEAB07DD485429,
+		0x3C34C7855019C6EA, 0x3FEEA9268A5946B7,
+		0x3C9432E62B64C035, 0x3FEEA76F15AD2148,
+		0xBC8CE44A6199769F, 0x3FEEA5E1B976DC09,
+		0xBC8C33C53BEF4DA8, 0x3FEEA47EB03A5585,
+		0xBC845378892BE9AE, 0x3FEEA34634CCC320,
+		0xBC93CEDD78565858, 0x3FEEA23882552225,
+		0x3C5710AA807E1964, 0x3FEEA155D44CA973,
+		0xBC93B3EFBF5E2228, 0x3FEEA09E667F3BCD,
+		0xBC6A12AD8734B982, 0x3FEEA012750BDABF,
+		0xBC6367EFB86DA9EE, 0x3FEE9FB23C651A2F,
+		0xBC80DC3D54E08851, 0x3FEE9F7DF9519484,
+		0xBC781F647E5A3ECF, 0x3FEE9F75E8EC5F74,
+		0xBC86EE4AC08B7DB0, 0x3FEE9F9A48A58174,
+		0xBC8619321E55E68A, 0x3FEE9FEB564267C9,
+		0x3C909CCB5E09D4D3, 0x3FEEA0694FDE5D3F,
+		0xBC7B32DCB94DA51D, 0x3FEEA11473EB0187,
+		0x3C94ECFD5467C06B, 0x3FEEA1ED0130C132,
+		0x3C65EBE1ABD66C55, 0x3FEEA2F336CF4E62,
+		0xBC88A1C52FB3CF42, 0x3FEEA427543E1A12,
+		0xBC9369B6F13B3734, 0x3FEEA589994CCE13,
+		0xBC805E843A19FF1E, 0x3FEEA71A4623C7AD,
+		0xBC94D450D872576E, 0x3FEEA8D99B4492ED,
+		0x3C90AD675B0E8A00, 0x3FEEAAC7D98A6699,
+		0x3C8DB72FC1F0EAB4, 0x3FEEACE5422AA0DB,
+		0xBC65B6609CC5E7FF, 0x3FEEAF3216B5448C,
+		0x3C7BF68359F35F44, 0x3FEEB1AE99157736,
+		0xBC93091FA71E3D83, 0x3FEEB45B0B91FFC6,
+		0xBC5DA9B88B6C1E29, 0x3FEEB737B0CDC5E5,
+		0xBC6C23F97C90B959, 0x3FEEBA44CBC8520F,
+		0xBC92434322F4F9AA, 0x3FEEBD829FDE4E50,
+		0xBC85CA6CD7668E4B, 0x3FEEC0F170CA07BA,
+		0x3C71AFFC2B91CE27, 0x3FEEC49182A3F090,
+		0x3C6DD235E10A73BB, 0x3FEEC86319E32323,
+		0xBC87C50422622263, 0x3FEECC667B5DE565,
+		0x3C8B1C86E3E231D5, 0x3FEED09BEC4A2D33,
+		0xBC91BBD1D3BCBB15, 0x3FEED503B23E255D,
+		0x3C90CC319CEE31D2, 0x3FEED99E1330B358,
+		0x3C8469846E735AB3, 0x3FEEDE6B5579FDBF,
+		0xBC82DFCD978E9DB4, 0x3FEEE36BBFD3F37A,
+		0x3C8C1A7792CB3387, 0x3FEEE89F995AD3AD,
+		0xBC907B8F4AD1D9FA, 0x3FEEEE07298DB666,
+		0xBC55C3D956DCAEBA, 0x3FEEF3A2B84F15FB,
+		0xBC90A40E3DA6F640, 0x3FEEF9728DE5593A,
+		0xBC68D6F438AD9334, 0x3FEEFF76F2FB5E47,
+		0xBC91EEE26B588A35, 0x3FEF05B030A1064A,
+		0x3C74FFD70A5FDDCD, 0x3FEF0C1E904BC1D2,
+		0xBC91BDFBFA9298AC, 0x3FEF12C25BD71E09,
+		0x3C736EAE30AF0CB3, 0x3FEF199BDD85529C,
+		0x3C8EE3325C9FFD94, 0x3FEF20AB5FFFD07A,
+		0x3C84E08FD10959AC, 0x3FEF27F12E57D14B,
+		0x3C63CDAF384E1A67, 0x3FEF2F6D9406E7B5,
+		0x3C676B2C6C921968, 0x3FEF3720DCEF9069,
+		0xBC808A1883CCB5D2, 0x3FEF3F0B555DC3FA,
+		0xBC8FAD5D3FFFFA6F, 0x3FEF472D4A07897C,
+		0xBC900DAE3875A949, 0x3FEF4F87080D89F2,
+		0x3C74A385A63D07A7, 0x3FEF5818DCFBA487,
+		0xBC82919E2040220F, 0x3FEF60E316C98398,
+		0x3C8E5A50D5C192AC, 0x3FEF69E603DB3285,
+		0x3C843A59AC016B4B, 0x3FEF7321F301B460,
+		0xBC82D52107B43E1F, 0x3FEF7C97337B9B5F,
+		0xBC892AB93B470DC9, 0x3FEF864614F5A129,
+		0x3C74B604603A88D3, 0x3FEF902EE78B3FF6,
+		0x3C83C5EC519D7271, 0x3FEF9A51FBC74C83,
+		0xBC8FF7128FD391F0, 0x3FEFA4AFA2A490DA,
+		0xBC8DAE98E223747D, 0x3FEFAF482D8E67F1,
+		0x3C8EC3BC41AA2008, 0x3FEFBA1BEE615A27,
+		0x3C842B94C3A9EB32, 0x3FEFC52B376BBA97,
+		0x3C8A64A931D185EE, 0x3FEFD0765B6E4540,
+		0xBC8E37BAE43BE3ED, 0x3FEFDBFDAD9CBE14,
+		0x3C77893B4D91CD9D, 0x3FEFE7C1819E90D8,
+		0x3C5305C14160CC89, 0x3FEFF3C22B8F71F1,
 	},
 };
 
@@ -675,116 +679,98 @@ const struct exp_data
 // negative k means the result may underflow.
 double specialcase(double_t tmp, uint64_t sbits, uint64_t ki)
 {
-	double_t scale, y;
+	double_t scale, result;
 
-	if ((ki & 0x80000000) == 0) {
+	if ((ki & 0x80000000) == 0)
+	{
 		// k > 0, the exponent of scale might have overflowed by <= 460.
-		sbits -= 1009ull << 52;
+		sbits -= (1009ull << 52);
 		scale = asdouble(sbits);
-		y = 0x1p1009 * (scale + scale * tmp);
-		return eval_as_double(y);
+		result = 0x1p1009 * (scale + scale * tmp);
+		return eval_as_double(result);
 	}
 	// k < 0, need special care in the subnormal range.
-	sbits += 1022ull << 52;
+	sbits += (1022ull << 52);
 	// Note: sbits is signed scale.
 	scale = asdouble(sbits);
-	y = scale + scale * tmp;
-	if (fabs(y) < 1.0) {
-		// Round y to the right precision before scaling it into the subnormal
+	result = scale + scale * tmp;
+	if (fabs(result) < 1.0)
+	{
+		// Round result to the right precision before scaling it into the subnormal
 		// range to avoid double rounding that can cause 0.5+E/2 ulp error where
 		// E is the worst-case ulp error outside the subnormal range.  So this
 		// is only useful if the goal is better than 1 ulp worst-case error.
-		double_t hi, lo, one = 1.0;
-		if (y < 0.0)
-			one = -1.0;
-		lo = scale - y + scale * tmp;
-		hi = one + y;
-		lo = one - hi + y + lo;
-		y = eval_as_double(hi + lo) - one;
+		double_t highDouble, lowDouble, signedOne = 1.0;
+		if (result < 0.0) { signedOne = -1.0; }
+		lowDouble = scale - result + (scale * tmp);
+		highDouble = signedOne + result;
+		lowDouble = signedOne - highDouble + result + lowDouble;
+		result = eval_as_double(highDouble + lowDouble) - signedOne;
 		// Fix the sign of 0.
-		if (y == 0.0)
-			y = asdouble(sbits & 0x8000000000000000);
+		if (result == 0.0) { result = asdouble(sbits & 0x8000000000000000); }
 		// The underflow exception needs to be signaled explicitly.
 		fp_force_eval(fp_barrier(0x1p-1022) * 0x1p-1022);
 	}
-	y = 0x1p-1022 * y;
-	return eval_as_double(y);
+	result = 0x1p-1022 * result;
+	return eval_as_double(result);
 }
 
-#define SIGN_BIAS (0x800 << EXP_TABLE_BITS)
+#define expinline_SIGN_BIAS (0x800 << EXP_TABLE_BITS)
 
-// Computes sign*exp(x+xtail) where |xtail| < 2^-8/N and |xtail| <= |x|.
+// Computes sign*exp(value+valueTail) where |valueTail| < 2^-8/N and |valueTail| <= |value|.
 // The sign_bias argument is SIGN_BIAS or 0 and sets the sign to -1 or 1.
-double exp_inline(double_t x, double_t xtail, uint32_t sign_bias)
+double exp_inline(double_t value, double_t valueTail, uint32_t sign_bias)
 {
-	uint32_t abstop;
-	uint64_t ki, idx, top, sbits;
+	uint32_t valueTopBitsAbs;
+	uint64_t zVarShiftedInt, index, topBits, sbits;
 	// double_t for better performance on targets with FLT_EVAL_METHOD==2.
-	double_t kd, z, r, r2, scale, tail, tmp;
-
-	abstop = top12(x) & 0x7ff;
-	if (predict_false(abstop - top12(0x1p-54) >=
-			  top12(512.0) - top12(0x1p-54))) {
-		if (abstop - top12(0x1p-54) >= 0x80000000) {
-			// Avoid spurious underflow for tiny x.
+	double_t zVarShifted, zVar, rVar, rVarSquared, scale, tail, temp;
+	
+	valueTopBitsAbs = (top12(value) & 0x7ff);
+	if (predict_false(valueTopBitsAbs - top12(0x1p-54) >= top12(512.0) - top12(0x1p-54)))
+	{
+		if (valueTopBitsAbs - top12(0x1p-54) >= 0x80000000)
+		{
+			// Avoid spurious underflow for tiny value.
 			// Note: 0 is common input.
 			double_t one = 1.0;
 			return sign_bias ? -one : one;
 		}
-		if (abstop >= top12(1024.0)) {
+		if (valueTopBitsAbs >= top12(1024.0))
+		{
 			// Note: inf and nan are already handled.
-			if (asuint64(x) >> 63)
-				return __math_uflow(sign_bias);
-			else
-				return __math_oflow(sign_bias);
+			if (asuint64(value) >> 63) { return __math_uflow(sign_bias); }
+			else { return __math_oflow(sign_bias); }
 		}
-		// Large x is special cased below.
-		abstop = 0;
+		// Large value is special cased below.
+		valueTopBitsAbs = 0;
 	}
-
-	// exp(x) = 2^(k/N) * exp(r), with exp(r) in [2^(-1/2N),2^(1/2N)].
-	// x = ln2/N*k + r, with int k and r in [-ln2/2N, ln2/2N].
-	z = expinline_InvLn2N * x;
-	// z - kd is in [-1, 1] in non-nearest rounding modes.
-	kd = eval_as_double(z + expinline_Shift);
-	ki = asuint64(kd);
-	kd -= expinline_Shift;
-	r = x + kd * expinline_NegLn2hiN + kd * expinline_NegLn2loN;
-	// The code assumes 2^-200 < |xtail| < 2^-8/N.
-	r += xtail;
+	
+	// exp(value) = 2^(k/N) * exp(rVar), with exp(rVar) in [2^(-1/2N),2^(1/2N)].
+	// value = ln2/N*k + rVar, with int k and rVar in [-ln2/2N, ln2/2N].
+	zVar = expinline_InvLn2N * value;
+	// zVar - zVarShifted is in [-1, 1] in non-nearest rounding modes.
+	zVarShifted = eval_as_double(zVar + expinline_Shift);
+	zVarShiftedInt = asuint64(zVarShifted);
+	zVarShifted -= expinline_Shift;
+	rVar = value + (zVarShifted * expinline_NegLn2hiN) + (zVarShifted * expinline_NegLn2loN);
+	// The code assumes 2^-200 < |valueTail| < 2^-8/N.
+	rVar += valueTail;
 	// 2^(k/N) ~= scale * (1 + tail).
-	idx = 2 * (ki % expinline_N);
-	top = (ki + sign_bias) << (52 - EXP_TABLE_BITS);
-	tail = asdouble(expinline_T[idx]);
+	index = 2 * (zVarShiftedInt % expinline_N);
+	topBits = ((zVarShiftedInt + sign_bias) << (52 - EXP_TABLE_BITS));
+	tail = asdouble(expinline_T[index]);
 	// This is only a valid scale when -1023*N < k < 1024*N.
-	sbits = expinline_T[idx + 1] + top;
-	// exp(x) = 2^(k/N) * exp(r) ~= scale + scale * (tail + exp(r) - 1).
+	sbits = expinline_T[index + 1] + topBits;
+	// exp(value) = 2^(k/N) * exp(rVar) ~= scale + scale * (tail + exp(rVar) - 1).
 	// Evaluation is optimized assuming superscalar pipelined execution.
-	r2 = r * r;
+	rVarSquared = rVar * rVar;
 	// Without fma the worst case error is 0.25/N ulp larger.
 	// Worst case error is less than 0.5+1.11/N+(abs poly error * 2^53) ulp.
-	tmp = tail + r + r2 * (expinline_C2 + r * expinline_C3) + r2 * r2 * (expinline_C4 + r * expinline_C5);
-	if (predict_false(abstop == 0)) { return specialcase(tmp, sbits, ki); }
+	temp = tail + rVar + rVarSquared * (expinline_C2 + rVar * expinline_C3) + rVarSquared * rVarSquared * (expinline_C4 + rVar * expinline_C5);
+	if (predict_false(valueTopBitsAbs == 0)) { return specialcase(temp, sbits, zVarShiftedInt); }
 	scale = asdouble(sbits);
-	// Note: tmp == 0 or |tmp| > 2^-200 and scale > 2^-739, so there
+	// Note: temp == 0 or |temp| > 2^-200 and scale > 2^-739, so there
 	// is no spurious underflow here even without fma.
-	return eval_as_double(scale + scale * tmp);
-}
-
-// Returns 0 if not int, 1 if odd int, 2 if even int.  The argument is
-// the bit representation of a non-zero finite floating-point value.
-int checkint64(uint64_t iy)
-{
-	int e = iy >> 52 & 0x7ff;
-	if (e < 0x3ff) { return 0; }
-	if (e > 0x3ff + 52) { return 2; }
-	if (iy & ((1ULL << (0x3ff + 52 - e)) - 1)) { return 0; }
-	if (iy & (1ULL << (0x3ff + 52 - e))) { return 1; }
-	return 2;
-}
-
-// Returns 1 if input is the bit representation of 0, infinity or nan.
-int zeroinfnan64(uint64_t i)
-{
-	return ((2 * i) - 1) >= ((2 * asuint64(INFINITY)) - 1);
+	return eval_as_double(scale + (scale * temp));
 }
