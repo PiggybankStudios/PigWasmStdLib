@@ -10,21 +10,21 @@ Description:
 // |                    Builtin Usage Controls                    |
 // +--------------------------------------------------------------+
 //TODO: Many of these have valid __builtin_ functions but they throw some kind of out of bounds error when executed. Maybe we are using the builtins wrong?
-#define PIG_WASM_STD_USE_BUILTINS_FMIN_FMAX      0
+#define PIG_WASM_STD_USE_BUILTINS_FMIN_FMAX      1
 #define PIG_WASM_STD_USE_BUILTINS_FABS           1
-#define PIG_WASM_STD_USE_BUILTINS_FMOD           0
-#define PIG_WASM_STD_USE_BUILTINS_ROUND          0
+#define PIG_WASM_STD_USE_BUILTINS_FMOD           1
+#define PIG_WASM_STD_USE_BUILTINS_ROUND          0 //index oob error
 #define PIG_WASM_STD_USE_BUILTINS_FLOOR_CEIL     1
-#define PIG_WASM_STD_USE_BUILTINS_SCALBN         0
-#define PIG_WASM_STD_USE_BUILTINS_SQRT           0
-#define PIG_WASM_STD_USE_BUILTINS_CBRT           0
-#define PIG_WASM_STD_USE_BUILTINS_SIN_COS_TAN    0
-#define PIG_WASM_STD_USE_BUILTINS_ASIN_ACOS_ATAN 0
-#define PIG_WASM_STD_USE_BUILTINS_POW            0
-#define PIG_WASM_STD_USE_BUILTINS_LOG            0
-#define PIG_WASM_STD_USE_BUILTINS_LOG2           0
-#define PIG_WASM_STD_USE_BUILTINS_LOG10          0
-#define PIG_WASM_STD_USE_BUILTINS_LDEXP          0
+#define PIG_WASM_STD_USE_BUILTINS_SCALBN         0 //generates import for scalbn
+#define PIG_WASM_STD_USE_BUILTINS_SQRT           1
+#define PIG_WASM_STD_USE_BUILTINS_CBRT           0 //generates import for cbrtf
+#define PIG_WASM_STD_USE_BUILTINS_SIN_COS_TAN    0 //index oob error
+#define PIG_WASM_STD_USE_BUILTINS_ASIN_ACOS_ATAN 0 //index oob error
+#define PIG_WASM_STD_USE_BUILTINS_POW            0 //index oob error
+#define PIG_WASM_STD_USE_BUILTINS_LOG            0 //index oob error
+#define PIG_WASM_STD_USE_BUILTINS_LOG2           0 //index oob error
+#define PIG_WASM_STD_USE_BUILTINS_LOG10          0 //index oob error
+#define PIG_WASM_STD_USE_BUILTINS_LDEXP          0 //index oob error
 #define PIG_WASM_STD_USE_BUILTINS_COPYSIGN       1
 
 // +--------------------------------------------------------------+
