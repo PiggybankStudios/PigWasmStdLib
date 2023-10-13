@@ -137,6 +137,17 @@ const uint16_t __rsqrt_table[128] = {
 
 #endif
 
+float fp_barrierf(float x)
+{
+	volatile float y = x;
+	return y;
+}
+double fp_barrier(double x)
+{
+	volatile double y = x;
+	return y;
+}
+
 float __math_divzerof(uint32_t sign)
 {
 	return fp_barrierf(sign ? -1.0f : 1.0f) / 0.0f;
@@ -150,12 +161,6 @@ double __math_divzero(uint32_t sign)
 uint32_t top16(double x)
 {
 	return asuint64(x) >> 48;
-}
-
-float fp_barrierf(float x)
-{
-	volatile float y = x;
-	return y;
 }
 
 // +--------------------------------------------------------------+
@@ -1685,10 +1690,10 @@ float powf(float base, float exponent)
 	
 	baseInt = asuint(base);
 	exponentInt = asuint(exponent);
-	if (predict_false(baseInt - 0x00800000 >= 0x7F800000 - 0x00800000 || zeroinfnan(exponentInt)))
+	if (predict_false(baseInt - 0x00800000 >= 0x7F800000 - 0x00800000 || zeroinfnan32(exponentInt)))
 	{
 		// Either (base < 0x1p-126 or inf or nan) or (exponent is 0 or inf or nan).
-		if (predict_false(zeroinfnan(exponentInt)))
+		if (predict_false(zeroinfnan32(exponentInt)))
 		{
 			if (2 * exponentInt == 0) { return 1.0f; }
 			if (baseInt == 0x3F800000) { return 1.0f; }
@@ -1697,10 +1702,10 @@ float powf(float base, float exponent)
 			if ((2 * baseInt < 2 * 0x3F800000) == !(exponentInt & 0x80000000)) { return 0.0f; } // |base|<1 && exponent==inf or |base|>1 && exponent==-inf.
 			return exponent * exponent;
 		}
-		if (predict_false(zeroinfnan(baseInt)))
+		if (predict_false(zeroinfnan32(baseInt)))
 		{
 			float_t baseSquared = base * base;
-			if (baseInt & 0x80000000 && checkint(exponentInt) == 1) { baseSquared = -baseSquared; }
+			if (baseInt & 0x80000000 && checkint32(exponentInt) == 1) { baseSquared = -baseSquared; }
 			// Without the barrier some versions of clang hoist the 1/baseSquared and
 			// thus division by zero exception can be signaled spuriously.
 			return exponentInt & 0x80000000 ? fp_barrierf(1 / baseSquared) : baseSquared;
@@ -1709,7 +1714,7 @@ float powf(float base, float exponent)
 		if (baseInt & 0x80000000)
 		{
 			// Finite base < 0.
-			int exponentType = checkint(exponentInt);
+			int exponentType = checkint32(exponentInt);
 			if (exponentType == 0) { return __math_invalidf(base); }
 			if (exponentType == 1) { signBias = exp2inline_SIGN_BIAS; }
 			baseInt &= 0x7FFFFFFF;
@@ -1732,9 +1737,81 @@ float powf(float base, float exponent)
 	}
 	return exp2_inline(exponentLogBase, signBias);
 }
-double pow(double value, double exponent)
+double pow(double base, double exponent)
 {
-	return value; //TODO: Implement me!
+	uint32_t signBias = 0;
+	uint64_t baseInt, exponentInt;
+	uint32_t baseTop12, exponentTop12;
+	
+	baseInt = asuint64(base);
+	exponentInt = asuint64(exponent);
+	baseTop12 = top12(base);
+	exponentTop12 = top12(exponent);
+	if (predict_false(baseTop12 - 0x001 >= 0x7FF - 0x001 || (exponentTop12 & 0x7FF) - 0x3BE >= 0x43E - 0x3BE))
+	{
+		// Note: if |exponent| > 1075 * ln2 * 2^53 ~= 0x1.749p62 then pow(base,exponent) = inf/0
+		// and if |exponent| < 2^-54 / 1075 ~= 0x1.e7b6p-65 then pow(base,exponent) = +-1.
+		// Special cases: (base < 0x1p-126 or inf or nan) or
+		// (|exponent| < 0x1p-65 or |exponent| >= 0x1p63 or nan).
+		if (predict_false(zeroinfnan64(exponentInt)))
+		{
+			if (2 * exponentInt == 0) { return 1.0; }
+			if (baseInt == asuint64(1.0)) { return 1.0; }
+			if (2 * baseInt > 2 * asuint64(INFINITY) || 2 * exponentInt > 2 * asuint64(INFINITY)) { return base + exponent; }
+			if (2 * baseInt == 2 * asuint64(1.0)) { return 1.0; }
+			if ((2 * baseInt < 2 * asuint64(1.0)) == !(exponentInt >> 63)) { return 0.0; } // |base|<1 && exponent==inf or |base|>1 && exponent==-inf.
+			return exponent * exponent;
+		}
+		if (predict_false(zeroinfnan64(baseInt)))
+		{
+			double_t xSquared = base * base;
+			if (baseInt >> 63 && checkint64(exponentInt) == 1) { xSquared = -xSquared; }
+			// Without the barrier some versions of clang hoist the 1/xSquared and
+			// thus division by zero exception can be signaled spuriously.
+			return (exponentInt >> 63) ? fp_barrier(1 / xSquared) : xSquared;
+		}
+		// Here base and exponent are non-zero finite.
+		if (baseInt >> 63)
+		{
+			// Finite base < 0.
+			int exponentType = checkint64(exponentInt);
+			if (exponentType == 0) { return __math_invalid(base); }
+			if (exponentType == 1) { signBias = SIGN_BIAS; }
+			baseInt &= 0x7FFFFFFFFFFFFFFF;
+			baseTop12 &= 0x7FF;
+		}
+		if ((exponentTop12 & 0X7FF) - 0X3BE >= 0X43E - 0X3BE)
+		{
+			// Note: signBias == 0 here because exponent is not odd.
+			if (baseInt == asuint64(1.0)) { return 1.0; }
+			if ((exponentTop12 & 0x7FF) < 0x3BE)
+			{
+				// |exponent| < 2^-65, base^exponent ~= 1 + exponent*log(base).
+				return 1.0;
+			}
+			return (baseInt > asuint64(1.0)) == (exponentTop12 < 0x800)
+				? __math_oflow(0)
+				: __math_uflow(0);
+		}
+		if (baseTop12 == 0)
+		{
+			// Normalize subnormal base so exponent becomes negative.
+			baseInt = asuint64(base * 0x1p52);
+			baseInt &= 0x7FFFFFFFFFFFFFFF;
+			baseInt -= (52ULL << 52);
+		}
+	}
+	
+	double_t baseLow1;
+	double_t baseHigh1 = log_inline(baseInt, &baseLow1);
+	double_t exponentHigh1, exponentLow1;
+	double_t exponentHigh2 = asdouble(exponentInt & (-1ULL << 27));
+	double_t exponentLow2 = exponent - exponentHigh2;
+	double_t baseHigh2 = asdouble(asuint64(baseHigh1) & (-1ULL << 27));
+	double_t baseLow2 = baseHigh1 - baseHigh2 + baseLow1;
+	exponentHigh1 = exponentHigh2 * baseHigh2;
+	exponentLow1 = exponentLow2 * baseHigh2 + exponent * baseLow2; // |exponentLow1| < |exponentHigh1| * 2^-25.
+	return exp_inline(exponentHigh1, exponentLow1, signBias);
 }
 #endif
 

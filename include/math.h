@@ -118,6 +118,7 @@ double __math_divzero(uint32_t sign);
 uint32_t top16(double x);
 
 float fp_barrierf(float x);
+double fp_barrier(double x);
 
 // +--------------------------------------------------------------+
 // |                          Functions                           |
@@ -266,6 +267,7 @@ double __math_invalid(double value)
 inline float eval_as_float(float x)
 inline double eval_as_double(double x)
 float fp_barrierf(float x)
+double fp_barrier(double x)
 float __math_divzerof(uint32_t sign)
 double __math_divzero(uint32_t sign)
 uint32_t top16(double x)

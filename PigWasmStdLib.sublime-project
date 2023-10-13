@@ -142,6 +142,7 @@
 			"double fmax(double value1, double value2)",
 			"double fmin(double value1, double value2)",
 			"double fmod(double numer, double denom)",
+			"double fp_barrier(double x)",
 			"double ldexp(double value, int exponent)",
 			"double log(double value)",
 			"double log10(double value)",

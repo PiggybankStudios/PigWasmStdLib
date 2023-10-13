@@ -364,6 +364,24 @@ void RunMathTestCases()
 	TestCaseFloat(powf(-INFINITY, 2.0f), INFINITY);
 	TestCaseFloat(powf(-INFINITY, 3.0f), -INFINITY);
 	
+	TestCaseDouble(pow(2.0, 2.0), 4.0);
+	TestCaseDouble(pow(2.0, 3.0), 8.0);
+	TestCaseDouble(pow(4.0, 0.5), 2.0);
+	TestCaseDouble(pow(2.0, 0.5), sqrt(2.0));
+	TestCaseDouble(pow(1.1f, 2.0), 1.210000052452088);
+	TestCaseDouble(pow(2.0, 1.2), 2.2973967099940698);
+	TestCaseDouble(pow(2.0, 1.8), 3.4822022531844965);
+	TestCaseDouble(pow(2.0, 1.99), 3.9723699817481437);
+	TestCaseDouble(pow(2.0, 3.001), 8.005547099700644);
+	TestCaseDouble(pow(2.0, 0.0), 1.0);
+	TestCaseDouble(pow(2.0, INFINITY), INFINITY);
+	TestCaseDouble(pow(2.0, NAN), NAN);
+	TestCaseDouble(pow(NAN, NAN), NAN);
+	TestCaseDouble(pow(NAN, 2.0), NAN);
+	TestCaseDouble(pow(INFINITY, 2.0), INFINITY);
+	TestCaseDouble(pow(-INFINITY, 2.0), INFINITY);
+	TestCaseDouble(pow(-INFINITY, 3.0), -INFINITY);
+	
 	TestCaseFloat(logf(1.0f), 0.0f);
 	TestCaseFloat(logf(2.0f), 0.6931471824645996f);
 	TestCaseFloat(logf(0.0f), -INFINITY);
