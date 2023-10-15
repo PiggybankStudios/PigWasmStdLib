@@ -13,7 +13,7 @@ Date:   10\12\2023
 #define NULL ((void*)0)
 #endif
 
-#define offsetof(type, member) __builtin_offsetof((type), (member))
+#define offsetof(type, member) __builtin_offsetof(type, member)
 
 #endif //  _STDDEF_H
 
