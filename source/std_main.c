@@ -9,17 +9,26 @@ Description:
 
 #include "std_common.h"
 
+#include "limits.h"
 #include "stdint.h"
 #include "float.h"
 #include "assert.h"
 #include "math.h"
 #include "stdlib.h"
+#include "string.h"
+#include "stdbool.h"
+#include "stdarg.h"
+#include "intrin.h"
+#include "stdio.h"
 
 #include "std_wasm_memory.c"
 
 #include "assert.c"
 #include "stdlib.c"
 #include "math.c"
+#include "string.c"
+#include "intrin.c"
+#include "stdio.c"
 
 // +==============================+
 // |      InitPigWasmStdLib       |

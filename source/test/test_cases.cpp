@@ -478,5 +478,38 @@ void RunMathTestCases()
 	TestCaseDouble(copysign(NAN, -1.0), NAN);
 	TestCaseDouble(copysign(112.0, NAN), 112.0);
 	
+	TestCaseFloat(atof("1.0"), 1.0f);
+	TestCaseFloat(atof("-1"), -1.0f);
+	TestCaseFloat(atof("*5"), 0.0f); //invalid input
+	TestCaseFloat(atof("5*"), 0.0f); //invalid input
+	TestCaseFloat(atof("3.1415926"), 3.1415926f);
+	TestCaseFloat(atof("3.14159265358"), 3.1415927410125732f);
+	TestCaseFloat(atof("-3.14159265358"), -3.1415927410125732f);
+	
 	jsPrintNumber("Ran Math Tests", numCases);
+}
+
+void RunStringTestCases()
+{
+	u8 testArray[128];
+	
+	memset(&testArray[0], 0x01, sizeof(testArray));
+	memset(&testArray[10], 0x02, sizeof(testArray) - 10);
+	testArray[127] = 0;
+	memcpy(&testArray[0], &testArray[8], 4);
+	for (int bIndex = 0; bIndex < sizeof(testArray); bIndex++)
+	{
+		jsPrintNumber("", testArray[bIndex]);
+	}
+	jsPrintNumber("memcmp", memcmp(&testArray[0], &testArray[0], 5));
+	jsPrintNumber("strncmp", strncmp((const char*)&testArray[0], (const char*)&testArray[0], 5));
+	jsPrintNumber("strlen", strlen((char*)&testArray[0]));
+	jsPrintNumber("wcslen", wcslen((wchar_t*)&testArray[0]));
+	
+	//TODO: Add test cases for memset
+	//TODO: Add test cases for memcmp
+	//TODO: Add test cases for memcpy
+	//TODO: Add test cases for strncmp
+	//TODO: Add test cases for strlen
+	//TODO: Add test cases for wcslen
 }

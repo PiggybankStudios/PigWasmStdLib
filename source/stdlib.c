@@ -3,7 +3,7 @@ File:   stdlib.c
 Author: Taylor Robbins
 Date:   10\07\2023
 Description: 
-	** Holds all the implementations stdlib.h declared functions
+	** Holds all the implementations for functions declared in stdlib.h
 */
 
 void* malloc(size_t numBytes)
@@ -32,4 +32,60 @@ void* aligned_alloc(size_t numBytes, size_t alignmentSize)
 {
 	assert(0 && "aligned_allocing memory is not allowed in WebAssembly!");
 	return nullptr;
+}
+
+static uint64_t stdRandState;
+
+void srand(unsigned int seed)
+{
+	stdRandState = (seed - 1);
+}
+
+int rand()
+{
+	stdRandState = (6364136223846793005ULL * stdRandState) + 1;
+	return (stdRandState >> 33);
+}
+
+double chatgpt_atof(const char *str)
+{
+	// This function was written by ChatGPT using the following prompt:
+	// Can you write an implementation for atof in C that doesn't use anything from the C standard library? The atof function takes a const char* and produces a double result, with the double being the value of the number represented by the string. Also make sure it handles any invalid characters and returns 0 if it finds any invalid characters or syntax
+	double result = 0.0;
+	double fraction = 0.1;
+	int sign = 1;
+	int state = 0; // 0 for integer part, 1 for fractional part
+	int invalid = 0; // Flag for invalid characters
+	
+	while (*str)
+	{
+		if (state == 0 && *str == '-') { sign = -1; }
+		else if (state == 0 && *str == '+') { } // Ignore the plus sign, if present
+		else if (*str >= '0' && *str <= '9')
+		{
+			if (state == 0) { result = result * 10.0 + (*str - '0'); }
+			else
+			{
+				result += fraction * (*str - '0');
+				fraction *= 0.1;
+			}
+		}
+		else if (*str == '.' && state == 0) { state = 1; }
+		else { invalid = 1; }
+		str++;
+	}
+	
+	if (invalid) { return 0.0; } // Invalid character encountered
+	
+	return result * sign;
+}
+
+double atof(const char* str)
+{
+	return chatgpt_atof(str);
+}
+
+void* alloca(size_t numBytes)
+{
+	return __builtin_alloca(numBytes);
 }
