@@ -9,7 +9,7 @@ Date:   09\23\2023
 
 #include <internal/std_common.h>
 
-EXTERN_C_START
+CONDITIONAL_EXTERN_C_START
 
 //NOTE: clang was shadowing our intrinsics implementations (like floor, ceil, scalbnf, sqrt, etc.) with it's builtin ones,
 // we've decided to route through our functions using macros and functions prefixed with _.
@@ -208,7 +208,7 @@ float  copysignf(float magnitude, float sign);
 double copysign(double magnitude, double sign);
 // long double copysignl(long double magnitude, long double sign);
 
-EXTERN_C_END
+CONDITIONAL_EXTERN_C_END
 
 #endif //  _MATH_H
 

@@ -9,7 +9,7 @@ Date:   10\12\2023
 
 #include <internal/std_common.h>
 
-EXTERN_C_START
+CONDITIONAL_EXTERN_C_START
 
 #define CHAR_MIN (-128)
 #define CHAR_MAX 127
@@ -33,7 +33,7 @@ EXTERN_C_START
 
 //TODO: Define PAGESIZE?
 
-EXTERN_C_END
+CONDITIONAL_EXTERN_C_END
 
 #endif //  _LIMITS_H
 

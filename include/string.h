@@ -9,7 +9,7 @@ Date:   10\12\2023
 
 #include <internal/std_common.h>
 
-EXTERN_C_START
+CONDITIONAL_EXTERN_C_START
 
 void* _memset(void* pntr, int value, size_t numBytes);
 #define memset(pntr, value, numBytes) _memset((pntr), (value), (numBytes))
@@ -21,7 +21,7 @@ int strncmp(const char* left, const char* right, size_t numBytes);
 size_t strlen(const char* str);
 size_t wcslen(const wchar_t* str);
 
-EXTERN_C_END
+CONDITIONAL_EXTERN_C_END
 
 #endif //  _STRING_H
 

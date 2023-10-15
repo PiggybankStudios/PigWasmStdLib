@@ -9,12 +9,21 @@ Description:
 #ifndef _STD_JS_API_H
 #define _STD_JS_API_H
 
-WASM_IMPORTED_FUNC __attribute__((noreturn)) void jsAbort(const char* messageStrPntr);
-WASM_IMPORTED_FUNC __attribute__((noreturn)) void jsAssertFailure(const char* filePathPntr, int fileLineNum, const char* funcNamePntr, const char* messageStrPntr);
-WASM_IMPORTED_FUNC void jsGrowMemory(unsigned int numPages);
-WASM_IMPORTED_FUNC void jsTestFunction();
-WASM_IMPORTED_FUNC void jsPrintNumber(const char* labelStrPntr, int number);
-WASM_IMPORTED_FUNC void jsPrintFloat(const char* labelStrPntr, double number);
-WASM_IMPORTED_FUNC void jsPrintString(const char* labelStrPntr, const char* strPntr);
+WASM_IMPORTED_FUNC __attribute__((noreturn)) void jsStdAbort(const char* messageStrPntr);
+WASM_IMPORTED_FUNC __attribute__((noreturn)) void jsStdAssertFailure(const char* filePathPntr, int fileLineNum, const char* funcNamePntr, const char* messageStrPntr);
+WASM_IMPORTED_FUNC void jsStdGrowMemory(unsigned int numPages);
 
 #endif //  _STD_JS_API_H
+
+// +--------------------------------------------------------------+
+// |                   Autocomplete Dictionary                    |
+// +--------------------------------------------------------------+
+/*
+@Functions
+void jsStdAbort(const char* messageStrPntr)
+void jsStdAssertFailure(const char* filePathPntr, int fileLineNum, const char* funcNamePntr, const char* messageStrPntr)
+void jsStdGrowMemory(unsigned int numPages)
+void jsStdPrintInteger(const char* labelStrPntr, int number)
+void jsStdPrintFloat(const char* labelStrPntr, double number)
+void jsStdPrintString(const char* labelStrPntr, const char* strPntr)
+*/

@@ -9,10 +9,10 @@ Date:   10\12\2023
 
 #include <internal/std_common.h>
 
-EXTERN_C_START
+CONDITIONAL_EXTERN_C_START
 
 int vsnprintf(char* bufferPntr, size_t bufferSize, const char* formatStr, va_list args);
 
-EXTERN_C_END
+CONDITIONAL_EXTERN_C_END
 
 #endif //  _STDIO_H

@@ -10,7 +10,7 @@ NOTE: This file cannot depend on anything but std_common.h
 
 #include <internal/std_common.h>
 
-EXTERN_C_START
+CONDITIONAL_EXTERN_C_START
 
 //TODO: Can we comment all of these defines to describe in detail what the values are?
 
@@ -69,7 +69,7 @@ EXTERN_C_START
 
 #define DECIMAL_DIG      36
 
-EXTERN_C_END
+CONDITIONAL_EXTERN_C_END
 
 #endif //  _FLOAT_H
 

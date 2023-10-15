@@ -7,15 +7,46 @@ Description:
 	** Contains the main client-side code for the test application for PigWasm StdLib
 */
 
+function jsPrintInteger(labelStrPntr, number)
+{
+	let labelStr = wasmPntrToJsString(stdGlobals.wasmMemory, labelStrPntr);
+	console.log(labelStr + ": " + number + " (0x" + number.toString(16) + ")");
+}
+
+function jsPrintFloat(labelStrPntr, number)
+{
+	let labelStr = wasmPntrToJsString(stdGlobals.wasmMemory, labelStrPntr);
+	console.log(labelStr + ": " + number);
+}
+
+function jsPrintString(labelStrPntr, strPntr)
+{
+	let labelStr = wasmPntrToJsString(stdGlobals.wasmMemory, labelStrPntr);
+	let str = wasmPntrToJsString(stdGlobals.wasmMemory, strPntr);
+	console.log(labelStr + ": " + str);
+}
+
+appApiFuncs = {
+	jsPrintInteger: jsPrintInteger,
+	jsPrintFloat: jsPrintFloat,
+	jsPrintString: jsPrintString,
+};
+
 async function MainLoop()
 {
 	// console.log("MainLoop start...");
 	canvas = PigWasm_AcquireCanvas(800, 600);
 	glContext = PigWasm_CreateGlContext(canvas);
+	
 	// console.log("Calling init...");
 	initialWasmPageCount = 64;
 	wasmMemory = PigWasm_InitMemory(initialWasmPageCount);
-	wasmModule = await PigWasm_Init(wasmMemory, initialWasmPageCount, "PigWasmStdLib_Test.wasm");
+	wasmModule = await PigWasm_Init(
+		wasmMemory,
+		initialWasmPageCount,
+		"PigWasmStdLib_Test.wasm",
+		appApiFuncs
+	);
 	
 	// console.log("Getting time...");
 	let initializeTimestamp = Math.floor(Date.now() / 1000); //TODO: Should we be worried about this being a 32-bit float?

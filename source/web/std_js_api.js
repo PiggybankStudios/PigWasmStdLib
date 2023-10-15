@@ -67,14 +67,14 @@ function wasmPntrToJsString(memory, ptr)
 // +--------------------------------------------------------------+
 // |                        API Functions                         |
 // +--------------------------------------------------------------+
-function jsAbort(messageStrPntr)
+function jsStdAbort(messageStrPntr)
 {
 	let messageStr = wasmPntrToJsString(stdGlobals.wasmMemory, messageStrPntr);
 	console.error("Abort:", messageStr);
 	throw new Error(messageStr);
 }
 
-function jsAssertFailure(filePathPntr, fileLineNum, funcNamePntr, messageStrPntr)
+function jsStdAssertFailure(filePathPntr, fileLineNum, funcNamePntr, messageStrPntr)
 {
 	let filePath = wasmPntrToJsString(stdGlobals.wasmMemory, filePathPntr);
 	let funcName = wasmPntrToJsString(stdGlobals.wasmMemory, funcNamePntr);
@@ -84,44 +84,16 @@ function jsAssertFailure(filePathPntr, fileLineNum, funcNamePntr, messageStrPntr
 	throw new Error(outputMessage);
 }
 
-function jsGrowMemory(numPages)
+function jsStdGrowMemory(numPages)
 {
 	// console.log("Memory growing by " + numPages + " pages");
 	stdGlobals.wasmMemory.grow(numPages);
 }
 
-function jsTestFunction()
-{
-	console.log("TestFunction was called!");
-}
-
-function jsPrintNumber(labelStrPntr, number)
-{
-	let labelStr = wasmPntrToJsString(stdGlobals.wasmMemory, labelStrPntr);
-	console.log(labelStr + ": " + number + " (0x" + number.toString(16) + ")");
-}
-
-function jsPrintFloat(labelStrPntr, number)
-{
-	let labelStr = wasmPntrToJsString(stdGlobals.wasmMemory, labelStrPntr);
-	console.log(labelStr + ": " + number);
-}
-
-function jsPrintString(labelStrPntr, strPntr)
-{
-	let labelStr = wasmPntrToJsString(stdGlobals.wasmMemory, labelStrPntr);
-	let str = wasmPntrToJsString(stdGlobals.wasmMemory, strPntr);
-	console.log(labelStr + ": " + str);
-}
-
-apiFuncs = {
-	jsAbort: jsAbort,
-	jsAssertFailure: jsAssertFailure,
-	jsGrowMemory: jsGrowMemory,
-	jsTestFunction: jsTestFunction,
-	jsPrintNumber: jsPrintNumber,
-	jsPrintFloat: jsPrintFloat,
-	jsPrintString: jsPrintString,
+jsStdApiFuncs = {
+	jsStdAbort: jsStdAbort,
+	jsStdAssertFailure: jsStdAssertFailure,
+	jsStdGrowMemory: jsStdGrowMemory,
 };
 
 // +--------------------------------------------------------------+
@@ -163,8 +135,13 @@ function PigWasm_InitMemory(initialMemPageCount)
 	return wasmMemory
 }
 
-async function PigWasm_Init(wasmMemory, initialMemPageCount, wasmFilePath)
+async function PigWasm_Init(wasmMemory, initialMemPageCount, wasmFilePath, appApiFuncs)
 {
+	apiFuncs = {
+		...jsStdApiFuncs,
+		...appApiFuncs,
+	}
+	
 	let wasmEnvironment =
 	{
 		memory: wasmMemory,

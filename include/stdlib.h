@@ -10,7 +10,7 @@ Date:   10\07\2023
 #include <internal/std_common.h>
 #include "stdint.h"
 
-EXTERN_C_START
+CONDITIONAL_EXTERN_C_START
 
 void* malloc(size_t numBytes);
 void* calloc(size_t numElements, size_t elemSize);
@@ -25,7 +25,7 @@ int rand();
 double atof(const char* str);
 void* alloca(size_t numBytes);
 
-EXTERN_C_END
+CONDITIONAL_EXTERN_C_END
 
 #endif //  _STDLIB_H
 

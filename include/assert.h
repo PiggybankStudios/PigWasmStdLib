@@ -9,7 +9,7 @@ Date:   10\07\2023
 
 #include <internal/std_common.h>
 
-EXTERN_C_START
+CONDITIONAL_EXTERN_C_START
 
 __attribute__((noreturn)) void StdAssertFailure(const char* filePath, int fileLineNum, const char* funcName, const char* conditionStr);
 
@@ -19,7 +19,7 @@ __attribute__((noreturn)) void StdAssertFailure(const char* filePath, int fileLi
 #define	assert(condition) (void)0
 #endif
 
-EXTERN_C_END
+CONDITIONAL_EXTERN_C_END
 
 #endif //  _ASSERT_H
 

@@ -12,8 +12,8 @@ bool TestCaseInt_(const char* testCaseStr, int result, int expectedValue)
 	{
 		jsPrintString("", "Test case failed!");
 		jsPrintString("Test", testCaseStr);
-		jsPrintNumber("Expected", expectedValue);
-		jsPrintNumber("Got", result);
+		jsPrintInteger("Expected", expectedValue);
+		jsPrintInteger("Got", result);
 		return false;
 	}
 	else { return true; }
@@ -60,7 +60,7 @@ bool TestCasePrint_(const char* expectedStr, const char* formatStr, ...)
 		jsPrintString("", "Test case failed!");
 		jsPrintString("Format", formatStr);
 		jsPrintString("Expected", expectedStr);
-		jsPrintNumber("Got Print Error", printResult);
+		jsPrintInteger("Got Print Error", printResult);
 		return false;
 	}
 	else
@@ -537,13 +537,13 @@ void RunMathTestCases()
 	
 	if (numCasesSucceeded == numCases)
 	{
-		jsPrintNumber("All Math Tests Succeeded", numCases);
+		jsPrintInteger("All Math Tests Succeeded", numCases);
 	}
 	else
 	{
-		jsPrintNumber("Some Math Tests Failed", numCases);
-		jsPrintNumber("Successes", numCasesSucceeded);
-		jsPrintNumber("Failures", numCases - numCasesSucceeded);
+		jsPrintInteger("Some Math Tests Failed", numCases);
+		jsPrintInteger("Successes", numCasesSucceeded);
+		jsPrintInteger("Failures", numCases - numCasesSucceeded);
 	}
 }
 
@@ -557,12 +557,12 @@ void RunStringTestCases()
 	memcpy(&testArray[0], &testArray[8], 4);
 	for (int bIndex = 0; bIndex < sizeof(testArray); bIndex++)
 	{
-		jsPrintNumber("", testArray[bIndex]);
+		jsPrintInteger("", testArray[bIndex]);
 	}
-	jsPrintNumber("memcmp", memcmp(&testArray[0], &testArray[0], 5));
-	jsPrintNumber("strncmp", strncmp((const char*)&testArray[0], (const char*)&testArray[0], 5));
-	jsPrintNumber("strlen", strlen((char*)&testArray[0]));
-	jsPrintNumber("wcslen", wcslen((wchar_t*)&testArray[0]));
+	jsPrintInteger("memcmp", memcmp(&testArray[0], &testArray[0], 5));
+	jsPrintInteger("strncmp", strncmp((const char*)&testArray[0], (const char*)&testArray[0], 5));
+	jsPrintInteger("strlen", strlen((char*)&testArray[0]));
+	jsPrintInteger("wcslen", wcslen((wchar_t*)&testArray[0]));
 	
 	//TODO: Add test cases for memset
 	//TODO: Add test cases for memcmp
@@ -622,13 +622,13 @@ void RunStdLibTestCases()
 	
 	if (numCasesSucceeded == numCases)
 	{
-		jsPrintNumber("All StdLib Tests Succeeded", numCases);
+		jsPrintInteger("All StdLib Tests Succeeded", numCases);
 	}
 	else
 	{
-		jsPrintNumber("Some StdLib Tests Failed", numCases);
-		jsPrintNumber("Successes", numCasesSucceeded);
-		jsPrintNumber("Failures", numCases - numCasesSucceeded);
+		jsPrintInteger("Some StdLib Tests Failed", numCases);
+		jsPrintInteger("Successes", numCasesSucceeded);
+		jsPrintInteger("Failures", numCases - numCasesSucceeded);
 	}
 }
 
@@ -669,12 +669,12 @@ void RunStdioTestCases()
 	
 	if (numCasesSucceeded == numCases)
 	{
-		jsPrintNumber("All StdLib Tests Succeeded", numCases);
+		jsPrintInteger("All StdLib Tests Succeeded", numCases);
 	}
 	else
 	{
-		jsPrintNumber("Some StdLib Tests Failed", numCases);
-		jsPrintNumber("Successes", numCasesSucceeded);
-		jsPrintNumber("Failures", numCases - numCasesSucceeded);
+		jsPrintInteger("Some StdLib Tests Failed", numCases);
+		jsPrintInteger("Successes", numCasesSucceeded);
+		jsPrintInteger("Failures", numCases - numCasesSucceeded);
 	}
 }

@@ -12,6 +12,10 @@ Description:
 #define GYLIB_LOOKUP_PRIMES_10
 #include "gylib/gy.h"
 
+WASM_IMPORTED_FUNC void jsPrintInteger(const char* labelStrPntr, int number);
+WASM_IMPORTED_FUNC void jsPrintFloat(const char* labelStrPntr, double number);
+WASM_IMPORTED_FUNC void jsPrintString(const char* labelStrPntr, const char* strPntr);
+
 #include "test_cases.cpp"
 
 // +==============================+
@@ -19,8 +23,8 @@ Description:
 // +==============================+
 WASM_EXPORTED_FUNC(void, Initialize)
 {
-	// RunMathTestCases();
-	// RunStringTestCases();
+	RunMathTestCases();
+	RunStringTestCases();
 	RunStdLibTestCases();
-	// RunStdioTestCases();
+	RunStdioTestCases();
 }

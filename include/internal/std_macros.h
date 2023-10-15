@@ -8,17 +8,17 @@ Date:   09\23\2023
 #define _STD_MACROS_H
 
 #if LANGUAGE_CPP
-#define EXTERN_C extern "C"
-#define EXTERN_C_START extern "C" {
-#define EXTERN_C_END   }
+#define CONDITIONAL_EXTERN_C extern "C"
+#define CONDITIONAL_EXTERN_C_START extern "C" {
+#define CONDITIONAL_EXTERN_C_END   }
 #else
-#define EXTERN_C       //nothing
-#define EXTERN_C_START //nothing
-#define EXTERN_C_END   //nothing
+#define CONDITIONAL_EXTERN_C       //nothing
+#define CONDITIONAL_EXTERN_C_START //nothing
+#define CONDITIONAL_EXTERN_C_END   //nothing
 #endif
 
-#define WASM_IMPORTED_FUNC EXTERN_C
-#define WASM_EXPORTED_FUNC(returnType, functionName, ...) EXTERN_C returnType __attribute__((export_name(#functionName))) functionName(__VA_ARGS__)
+#define WASM_IMPORTED_FUNC CONDITIONAL_EXTERN_C
+#define WASM_EXPORTED_FUNC(returnType, functionName, ...) CONDITIONAL_EXTERN_C returnType __attribute__((export_name(#functionName))) functionName(__VA_ARGS__)
 
 #if LANGUAGE_C
 #define nullptr ((void*)0)
@@ -31,9 +31,9 @@ Date:   09\23\2023
 // +--------------------------------------------------------------+
 /*
 @Defines
-EXTERN_C
-EXTERN_C_START
-EXTERN_C_END
+CONDITIONAL_EXTERN_C
+CONDITIONAL_EXTERN_C_START
+CONDITIONAL_EXTERN_C_END
 WASM_IMPORTED_FUNC
 @Functions
 #define WASM_EXPORTED_FUNC(returnType, functionName, ...)
