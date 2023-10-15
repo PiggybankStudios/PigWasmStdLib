@@ -6,7 +6,7 @@ Description:
 	** Holds a bunch of test cases for the PigWasm StdLib
 */
 
-void TestCaseFloat_(const char* testCaseStr, float result, float expectedValue)
+bool TestCaseFloat_(const char* testCaseStr, float result, float expectedValue)
 {
 	if (result != expectedValue && !(isnan(result) && isnan(expectedValue)))
 	{
@@ -14,11 +14,13 @@ void TestCaseFloat_(const char* testCaseStr, float result, float expectedValue)
 		jsPrintString(testCaseStr);
 		jsPrintFloat("Expected", expectedValue);
 		jsPrintFloat("Got", result);
+		return false;
 	}
+	else { return true; }
 }
-#define TestCaseFloat(testCase, expectedValue) do { numCases++; TestCaseFloat_(#testCase, (testCase), (expectedValue)); } while(0)
+#define TestCaseFloat(testCase, expectedValue) do { numCases++; if (TestCaseFloat_(#testCase, (testCase), (expectedValue))) { numCasesSucceeded++; } } while(0)
 
-void TestCaseDouble_(const char* testCaseStr, double result, double expectedValue)
+bool TestCaseDouble_(const char* testCaseStr, double result, double expectedValue)
 {
 	if (result != expectedValue && !(isnan(result) && isnan(expectedValue)))
 	{
@@ -26,13 +28,16 @@ void TestCaseDouble_(const char* testCaseStr, double result, double expectedValu
 		jsPrintString(testCaseStr);
 		jsPrintFloat("Expected", expectedValue);
 		jsPrintFloat("Got", result);
+		return false;
 	}
+	else { return true; }
 }
-#define TestCaseDouble(testCase, expectedValue) do { numCases++; TestCaseDouble_(#testCase, (testCase), (expectedValue)); } while(0)
+#define TestCaseDouble(testCase, expectedValue) do { numCases++; if (TestCaseDouble_(#testCase, (testCase), (expectedValue))) { numCasesSucceeded++; } } while(0)
 
 void RunMathTestCases()
 {
 	int numCases = 0;
+	int numCasesSucceeded = 0;
 	
 	TestCaseFloat(fminf(-13.1234f, 1.2f), -13.1234f);
 	TestCaseFloat(fminf(1.2f, -13.1234f), -13.1234f);
@@ -486,7 +491,16 @@ void RunMathTestCases()
 	TestCaseFloat(atof("3.14159265358"), 3.1415927410125732f);
 	TestCaseFloat(atof("-3.14159265358"), -3.1415927410125732f);
 	
-	jsPrintNumber("Ran Math Tests", numCases);
+	if (numCasesSucceeded == numCases)
+	{
+		jsPrintNumber("All Math Tests Succeeded", numCases);
+	}
+	else
+	{
+		jsPrintNumber("Some Math Tests Failed", numCases);
+		jsPrintNumber("Successes", numCasesSucceeded);
+		jsPrintNumber("Failures", numCases - numCasesSucceeded);
+	}
 }
 
 void RunStringTestCases()
@@ -512,4 +526,48 @@ void RunStringTestCases()
 	//TODO: Add test cases for strncmp
 	//TODO: Add test cases for strlen
 	//TODO: Add test cases for wcslen
+}
+
+void RunStdLibTestCases()
+{
+	int numCases = 0;
+	int numCasesSucceeded = 0;
+	
+	TestCaseDouble(atof(" "), 0.0);
+	TestCaseDouble(atof("0.5"), 0.5);
+	TestCaseDouble(atof("1.2"), 1.2);
+	TestCaseDouble(atof("+1.2"), 1.2);
+	TestCaseDouble(atof("-1.2"), -1.2);
+	TestCaseDouble(atof("0.0001"), 0.0001);
+	TestCaseDouble(atof("1.23456789"), 1.2345678900000001);
+	TestCaseDouble(atof("-10000.5"), -10000.5);
+	TestCaseDouble(atof("--1"), 0.0);
+	TestCaseDouble(atof("-+1"), 0.0);
+	TestCaseDouble(atof("+-1"), 0.0);
+	TestCaseDouble(atof("1-"), 0.0);
+	TestCaseDouble(atof("1.0-"), 0.0);
+	TestCaseDouble(atof("1.0+"), 0.0);
+	TestCaseDouble(atof("-0.0"), 0.0);
+	TestCaseDouble(atof("1j"), 0.0);
+	TestCaseDouble(atof("1^.2"), 0.0);
+	TestCaseDouble(atof("1..2"), 0.0);
+	TestCaseDouble(atof("    1.2"), 1.2);
+	TestCaseDouble(atof("1    .2"), 0.0);
+	TestCaseDouble(atof("1.    2"), 0.0);
+	TestCaseDouble(atof("1.2    "), 1.2);
+	TestCaseDouble(atof("3.14159265358979323846"), 3.14159265358979323846);
+	TestCaseDouble(atof("3.1e2"), 3.1e2);
+	TestCaseDouble(atof("3.1e-2"), 0.031000000923872003); //pretty close to 0.031
+	TestCaseDouble(atof("1.23e-20"), 0.000000000000000000012300003665686174); //pretty close to 0.0...0123
+	
+	if (numCasesSucceeded == numCases)
+	{
+		jsPrintNumber("All StdLib Tests Succeeded", numCases);
+	}
+	else
+	{
+		jsPrintNumber("Some StdLib Tests Failed", numCases);
+		jsPrintNumber("Successes", numCasesSucceeded);
+		jsPrintNumber("Failures", numCases - numCasesSucceeded);
+	}
 }

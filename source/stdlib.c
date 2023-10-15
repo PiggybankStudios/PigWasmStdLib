@@ -6,6 +6,8 @@ Description:
 	** Holds all the implementations for functions declared in stdlib.h
 */
 
+#define PIG_WASM_STD_USE_CHATGPT_ATOF  0
+
 void* malloc(size_t numBytes)
 {
 	return WasmMemoryAllocate(numBytes);
@@ -47,6 +49,7 @@ int rand()
 	return (stdRandState >> 33);
 }
 
+#if PIG_WASM_STD_USE_CHATGPT_ATOF
 double chatgpt_atof(const char *str)
 {
 	// This function was written by ChatGPT using the following prompt:
@@ -79,10 +82,84 @@ double chatgpt_atof(const char *str)
 	
 	return result * sign;
 }
+#endif
+
+#define ATOF_MAX_STR_LENGTH 1000
+#define atof_IsDigit(c) (c >= '0' && c <= '9')
+#define atof_CharValue(c) (c - '0')
 
 double atof(const char* str)
 {
+	#if PIG_WASM_STD_USE_CHATGPT_ATOF
 	return chatgpt_atof(str);
+	#else
+	int sign = 1;
+	double wholePart = 0;
+	double fractionalPart = 0;
+	int exponentPartSign = 1;
+	int exponentPart = 0;
+	char currentChar = *str++;
+	int charIndex = 0; //Limit for security purposes
+	
+	while (currentChar == ' ') { currentChar = *str++; }
+	
+	if (currentChar == '+' || currentChar == '-')
+	{
+		sign = ((currentChar == '-') ? -1 : 1);
+		currentChar = *str++;
+	}
+	
+	while (currentChar != '\0' && atof_IsDigit(currentChar) && charIndex < ATOF_MAX_STR_LENGTH)
+	{
+		wholePart = (wholePart * 10) + atof_CharValue(currentChar);
+		currentChar = *str++;
+		charIndex++;
+	}
+	
+	if (currentChar == '.' || currentChar == ',')
+	{
+		currentChar = *str++;
+		
+		double fracPower = 1;
+		while (currentChar != '\0' && atof_IsDigit(currentChar) && charIndex < ATOF_MAX_STR_LENGTH)
+		{
+			fracPower *= 10;
+			fractionalPart += atof_CharValue(currentChar) / fracPower;
+			currentChar = *str++;
+			charIndex++;
+		}
+	}
+	
+	if (currentChar == 'e' || currentChar == 'E')
+	{
+		currentChar = *str++;
+		
+		if (currentChar == '+' || currentChar == '-')
+		{
+			exponentPartSign = ((currentChar == '-') ? -1 : 1);
+			currentChar = *str++;
+		}
+		
+		while (currentChar != '\0' && atof_IsDigit(currentChar) && charIndex < ATOF_MAX_STR_LENGTH)
+		{
+			exponentPart = (exponentPart * 10) + atof_CharValue(currentChar);
+			currentChar = *str++;
+			charIndex++;
+		}
+	}
+	
+	while (currentChar == ' ') { currentChar = *str++; }
+	
+	if (currentChar != '\0')
+	{
+		//TODO: Set errno? We either hit our limit (charIndex >= ATOF_MAX_STR_LENGTH) or found an invalid character
+		return 0.0;
+	}
+	
+	double result = sign * (wholePart + fractionalPart);
+	for (int eIndex = 0; eIndex < exponentPart; eIndex++) { result = result * (exponentPartSign > 0 ? 10.0 : 0.1f); }
+	return result;
+	#endif
 }
 
 void* alloca(size_t numBytes)

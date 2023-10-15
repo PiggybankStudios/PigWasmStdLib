@@ -45,7 +45,8 @@ WASM_EXPORTED_FUNC(void, Initialize)
 	// jsPrintNumber("someNumber", someNumber);
 	
 	// RunMathTestCases();
-	RunStringTestCases();
+	// RunStringTestCases();
+	RunStdLibTestCases();
 }
 
 #ifdef TEST_INCLUDE_STD_LIBRARY
