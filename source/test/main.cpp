@@ -35,8 +35,8 @@ WASM_IMPORTED_FUNC void jsPrintString(const char* labelStrPntr, const char* strP
 // +==============================+
 WASM_EXPORTED_FUNC(void, Initialize)
 {
-	// RunMathTestCases();
-	RunStringTestCases();
+	RunMathTestCases();
+	// RunStringTestCases();
 	// RunStdLibTestCases();
 	// RunStdioTestCases();
 }

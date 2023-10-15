@@ -511,6 +511,22 @@ void RunMathTestCases()
 	TestCaseDouble(ldexp(INFINITY, 2), INFINITY);
 	TestCaseDouble(ldexp(NAN, 2), NAN);
 	
+	TestCaseFloat(expf(1.0f), M_E);
+	TestCaseFloat(expf(2.0f), 7.389056205749512f);
+	TestCaseFloat(expf(1.2f), 3.3201169967651367f);
+	TestCaseFloat(expf(0.0f), 1.0f);
+	TestCaseFloat(expf(-1.0f), 0.3678794503211975f);
+	TestCaseFloat(expf(10.0f), 22026.46484375f);
+	TestCaseFloat(expf(-10.0f), 0.00004539993096841499f);
+	
+	TestCaseDouble(exp(1.0), M_E);
+	TestCaseDouble(exp(2.0), 7.38905609893065);
+	TestCaseDouble(exp(1.2), 3.3201169227365472);
+	TestCaseDouble(exp(0.0), 1.0);
+	TestCaseDouble(exp(-1.0), 0.36787944117144233);
+	TestCaseDouble(exp(10.0), 22026.465794806718);
+	TestCaseDouble(exp(-10.0), 0.000045399929762484854);
+	
 	TestCaseFloat(copysignf(112.0f, -1.0f), -112.0f);
 	TestCaseFloat(copysignf(112.0f, -INFINITY), -112.0f);
 	TestCaseFloat(copysignf(0.0f, -1.0f), -0.0f);
@@ -622,6 +638,12 @@ void RunStdLibTestCases()
 {
 	int numCases = 0;
 	int numCasesSucceeded = 0;
+	
+	TestCaseInt(abs(17), 17);
+	TestCaseInt(abs(-17), 17);
+	TestCaseInt(abs(0), 0);
+	TestCaseInt(abs(INT_MAX), INT_MAX);
+	TestCaseInt(abs(INT_MIN+1), INT_MAX);
 	
 	srand(1234);
 	TestCaseInt(rand(), 0x315C8716);

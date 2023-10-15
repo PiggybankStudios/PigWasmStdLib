@@ -25,6 +25,7 @@ Description:
 #define PIG_WASM_STD_USE_BUILTINS_LOG2           0 //index oob error
 #define PIG_WASM_STD_USE_BUILTINS_LOG10          0 //index oob error
 #define PIG_WASM_STD_USE_BUILTINS_LDEXP          0 //index oob error
+#define PIG_WASM_STD_USE_BUILTINS_EXP            0 //index oob error
 #define PIG_WASM_STD_USE_BUILTINS_COPYSIGN       1
 
 // +--------------------------------------------------------------+
@@ -100,6 +101,10 @@ double eval_as_double(double x)
 #include "math_log_helpers.c"
 #endif
 
+#if !PIG_WASM_STD_USE_BUILTINS_LDEXP || !PIG_WASM_STD_USE_BUILTINS_EXP || PIG_WASM_STD_USE_BUILTINS_POW
+#include "math_exp_helpers.c"
+#endif
+
 #if !PIG_WASM_STD_USE_BUILTINS_SQRT || !PIG_WASM_STD_USE_BUILTINS_CBRT
 
 static inline uint32_t MultiplyU32Overflow(uint32_t left, uint32_t right)
@@ -165,6 +170,10 @@ uint32_t top16(double x)
 uint32_t top12(double value)
 {
 	return (asuint64(value) >> 52);
+}
+uint32_t top12f(float x)
+{
+	return (asuint(x) >> 20);
 }
 
 // +--------------------------------------------------------------+
@@ -2212,6 +2221,106 @@ float ldexpf(float value, int exponent)
 double ldexp(double value, int exponent)
 {
 	return scalbn(value, exponent);
+}
+#endif
+
+// +--------------------------------------------------------------+
+// |                         exp and expf                         |
+// +--------------------------------------------------------------+
+#if PIG_WASM_STD_USE_BUILTINS_EXP
+inline float expf(float value)  { return __builtin_expf(value); }
+inline double exp(double value) { return __builtin_exp(value);  }
+#else
+float expf(float value)
+{
+	uint32_t abstop;
+	uint64_t ki, t;
+	double_t kd, xd, z, r, r2, y, s;
+	
+	xd = (double_t)value;
+	abstop = top12(value) & 0x7FF;
+	if (predict_false(abstop >= top12(88.0f)))
+	{
+		// |value| >= 88 or value is nan.
+		if (asuint(value) == asuint(-INFINITY)) { return 0.0f; }
+		if (abstop >= top12(INFINITY)) { return value + value; }
+		if (value > 0x1.62E42Ep6F) { return __math_oflowf(0); } // value > log(0x1p128) ~= 88.72
+		if (value < -0x1.9FE368p6F) { return __math_uflowf(0); } // value < log(0x1p-150) ~= -103.97
+	}
+	
+	// value*N/Ln2 = k + r with r in [-1/2, 1/2] and int k.
+	z = exp2f_InvLn2N * xd;
+	
+	// Round and convert z to int, the result is in [-150*N, 128*N] and
+	// ideally ties-to-even rule is used, otherwise the magnitude of r
+	// can be bigger which gives larger approximation error.
+	kd = eval_as_double(z + exp2f_SHIFT);
+	ki = asuint64(kd);
+	kd -= exp2f_SHIFT;
+	r = z - kd;
+	
+	// exp(value) = 2^(k/N) * 2^(r/N) ~= s * (C0*r^3 + C1*r^2 + C2*r + 1)
+	t = exp2f_T[ki % EXP2F_N];
+	t += ki << (52 - EXP2F_TABLE_BITS);
+	s = asdouble(t);
+	z = exp2f_C[0] * r + exp2f_C[1];
+	r2 = r * r;
+	y = exp2f_C[2] * r + 1;
+	y = z * r2 + y;
+	y = y * s;
+	return eval_as_float(y);
+}
+double exp(double value)
+{
+	uint32_t abstop;
+	uint64_t ki, idx, top, sbits;
+	double_t kd, z, r, r2, scale, tail, tmp;
+	
+	abstop = top12(value) & 0x7ff;
+	if (predict_false(abstop - top12(0x1p-54) >= top12(512.0) - top12(0x1p-54))) {
+		if (abstop - top12(0x1p-54) >= 0x80000000)
+			// Avoid spurious underflow for tiny value.
+			// Note: 0 is common input.
+			return 1.0 + value;
+		if (abstop >= top12(1024.0)) {
+			if (asuint64(value) == asuint64(-INFINITY))
+				return 0.0;
+			if (abstop >= top12(INFINITY))
+				return 1.0 + value;
+			if (asuint64(value) >> 63)
+				return __math_uflow(0);
+			else
+				return __math_oflow(0);
+		}
+		// Large value is special cased below.
+		abstop = 0;
+	}
+	
+	// exp(value) = 2^(k/N) * exp(r), with exp(r) in [2^(-1/2N),2^(1/2N)].
+	// value = ln2/N*k + r, with int k and r in [-ln2/2N, ln2/2N].
+	z = exp_InvLn2N * value;
+	// z - kd is in [-1, 1] in non-nearest rounding modes.
+	kd = eval_as_double(z + exp_Shift);
+	ki = asuint64(kd);
+	kd -= exp_Shift;
+	r = value + kd * exp_NegLn2hiN + kd * exp_NegLn2loN;
+	// 2^(k/N) ~= scale * (1 + tail).
+	idx = 2 * (ki % exp_N);
+	top = ki << (52 - EXP_TABLE_BITS);
+	tail = asdouble(exp_T[idx]);
+	// This is only a valid scale when -1023*N < k < 1024*N.
+	sbits = exp_T[idx + 1] + top;
+	// exp(value) = 2^(k/N) * exp(r) ~= scale + scale * (tail + exp(r) - 1).
+	// Evaluation is optimized assuming superscalar pipelined execution.
+	r2 = r * r;
+	// Without fma the worst case error is 0.25/N ulp larger.
+	// Worst case error is less than 0.5+1.11/N+(abs poly error * 2^53) ulp.
+	tmp = tail + r + r2 * (exp_C2 + r * exp_C3) + r2 * r2 * (exp_C4 + r * exp_C5);
+	if (predict_false(abstop == 0)) { return exp_specialcase(tmp, sbits, ki); }
+	scale = asdouble(sbits);
+	/* Note: tmp == 0 or |tmp| > 2^-200 and scale > 2^-739, so there
+	   is no spurious underflow here even without fma.  */
+	return eval_as_double(scale + scale * tmp);
 }
 #endif
 

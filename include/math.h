@@ -118,6 +118,7 @@ double __math_divzero(uint32_t sign);
 uint32_t top16(double x);
 // Top 12 bits of a double (sign and exponent bits).
 uint32_t top12(double value);
+uint32_t top12f(float x);
 
 float fp_barrierf(float x);
 double fp_barrier(double x);
@@ -203,6 +204,9 @@ double log10(double x);
 
 float  ldexpf(float value, int exponent);
 double ldexp(double value, int exponent);
+
+float  expf(float value);
+double exp(double value);
 
 float  copysignf(float magnitude, float sign);
 double copysign(double magnitude, double sign);
@@ -318,6 +322,8 @@ float  log10f(float value)
 double log10(double value)
 double ldexp(double value, int exponent)
 float  ldexpf(float value, int exponent)
+float  expf(float value)
+double exp(double value)
 float  copysignf(float magnitude, float sign)
 double copysign(double magnitude, double sign)
 */

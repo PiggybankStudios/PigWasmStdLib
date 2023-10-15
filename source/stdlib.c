@@ -8,6 +8,11 @@ Description:
 
 #define PIG_WASM_STD_USE_CHATGPT_ATOF  0
 
+int abs(int value)
+{
+	return ((value > 0) ? value : -value);
+}
+
 void* malloc(size_t numBytes)
 {
 	return WasmMemoryAllocate(numBytes);

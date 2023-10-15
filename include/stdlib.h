@@ -12,6 +12,8 @@ Date:   10\07\2023
 
 CONDITIONAL_EXTERN_C_START
 
+int abs(int value);
+
 void* malloc(size_t numBytes);
 void* calloc(size_t numElements, size_t elemSize);
 void* realloc(void* prevAllocPntr, size_t newSize);

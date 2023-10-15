@@ -57,6 +57,7 @@ float  logf(float value);                      double log(double value);
 float  log2f(float value);                     double log2(double value);
 float  log10f(float value);                    double log10(double value);
 float  ldexpf(float value, int exponent);      double ldexp(double value, int exponent);
+float  expf(float value);                      double exp(double value);
 float  copysignf(float magnitude, float sign); double copysign(double magnitude, double sign);
 ```
 ### new
