@@ -7,7 +7,7 @@ Description:
 */
 
 #define STB_SPRINTF_IMPLEMENTATION
-#include "stb/stb_sprintf.h"
+#include "stb_sprintf.h"
 
 int vsnprintf(char* bufferPntr, size_t bufferSize, const char* formatStr, va_list args)
 {
