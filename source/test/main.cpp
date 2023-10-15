@@ -19,7 +19,6 @@ Description:
 #include <intrin.h>
 #include <stdio.h>
 #else
-#define WASM_COMPILATION
 #include "gylib/gy_defines_check.h"
 #define GYLIB_LOOKUP_PRIMES_10
 #include "gylib/gy.h"

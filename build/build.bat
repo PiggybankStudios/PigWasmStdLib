@@ -37,12 +37,13 @@ del *.wasm > NUL 2> NUL
 del *.js > NUL 2> NUL
 del *.o > NUL 2> NUL
 
+set CompilerFlags=-DWASM_COMPILATION -DSTD_ASSERTIONS_ENABLED -DDEBUG_BUILD=%DebugBuild%
 rem --no-standard-libraries = ?
 rem --no-standard-includes = ?
 rem --target=wasm32 = ?
 rem -mbulk-memory = Prevent conversion of simple loops into memset or memcpy?
 rem -fno-builtin = (Optional) makes some calls like sqrtf actually go to our own sqrtf function rather than linking to the builtin clang implementation
-set CompilerFlags=--no-standard-libraries --no-standard-includes --target=wasm32 -mbulk-memory
+set CompilerFlags=%CompilerFlags% --no-standard-libraries --no-standard-includes --target=wasm32 -mbulk-memory
 set IncludeDirectories=-I"%IncludeDirectory%" -I"%SourceDirectory%" -I"%LibDirectory%\include"
 rem --no-entry        = ?
 rem --allow-undefined = ?
@@ -51,9 +52,7 @@ rem --lto-O2          = ?
 set LinkerFlags=--no-entry --allow-undefined --import-memory --lto-O2
 
 if "%DebugBuild%"=="1" (
-	set CompilerFlags=%CompilerFlags% -g -DSTD_ASSERTIONS_ENABLED
-) else (
-	set CompilerFlags=%CompilerFlags% -DSTD_ASSERTIONS_DISABLED
+	set CompilerFlags=%CompilerFlags% -g
 )
 
 rem +--------------------------------------------------------------+
