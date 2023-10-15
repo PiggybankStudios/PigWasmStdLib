@@ -70,6 +70,10 @@ void va_end(va_list args); //macro
 void va_arg(va_list args, type); //macro
 void va_copy(va_list dest, va_list source); //macro
 ```
+### stddef.h
+```cpp
+#define offsetof(type, member)
+```
 ### stdio.h
 ```cpp
 int vsnprintf(char* bufferPntr, size_t bufferSize, const char* formatStr, va_list args);
@@ -175,7 +179,7 @@ __bool_true_false_are_defined
 ```
 ### stddef.h
 ```cpp
-//Currently empty
+NULL
 ```
 ### stdint.h
 ```cpp
