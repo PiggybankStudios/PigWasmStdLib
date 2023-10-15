@@ -10,6 +10,8 @@ Description:
 #ifndef _STD_COMMON_H
 #define _STD_COMMON_H
 
+#define USING_PIG_WASM_STD_LIB   1
+
 #include "internal/std_auto_defines.h"
 #include "internal/std_options.h"
 #include "internal/std_constants.h"

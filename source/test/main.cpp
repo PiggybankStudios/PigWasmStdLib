@@ -6,7 +6,7 @@ Description:
 	** Holds some functions that help us test the standard library implementations without needing a project properly set up
 */
 
-#define WASM_NEW_COMPILATION
+#define WASM_COMPILATION
 #include "gylib/gy_defines_check.h"
 
 #define GYLIB_LOOKUP_PRIMES_10
