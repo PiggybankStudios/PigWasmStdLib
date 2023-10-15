@@ -92,6 +92,7 @@ int rand();
 double atof(const char* str);
 void* alloca(size_t numBytes);
 void qsort(void* basePntr, size_t numItems, size_t itemSize, CompareFunc_f* compareFunc);
+void exit(int exitCode);
 ```
 ### string.h
 ```cpp

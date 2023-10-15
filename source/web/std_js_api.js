@@ -67,11 +67,12 @@ function wasmPntrToJsString(memory, ptr)
 // +--------------------------------------------------------------+
 // |                        API Functions                         |
 // +--------------------------------------------------------------+
-function jsStdAbort(messageStrPntr)
+function jsStdAbort(messageStrPntr, exitCode)
 {
 	let messageStr = wasmPntrToJsString(stdGlobals.wasmMemory, messageStrPntr);
-	console.error("Abort:", messageStr);
-	throw new Error(messageStr);
+	let exitStr = "Abort [" + exitCode + "]: " + messageStr;
+	console.error(exitStr);
+	throw new Error(exitStr);
 }
 
 function jsStdAssertFailure(filePathPntr, fileLineNum, funcNamePntr, messageStrPntr)

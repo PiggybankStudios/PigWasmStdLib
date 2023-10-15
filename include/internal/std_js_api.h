@@ -9,8 +9,8 @@ Description:
 #ifndef _STD_JS_API_H
 #define _STD_JS_API_H
 
-WASM_IMPORTED_FUNC __attribute__((noreturn)) void jsStdAbort(const char* messageStrPntr);
-WASM_IMPORTED_FUNC __attribute__((noreturn)) void jsStdAssertFailure(const char* filePathPntr, int fileLineNum, const char* funcNamePntr, const char* messageStrPntr);
+WASM_IMPORTED_FUNC _Noreturn void jsStdAbort(const char* messageStrPntr, int exitCode);
+WASM_IMPORTED_FUNC _Noreturn void jsStdAssertFailure(const char* filePathPntr, int fileLineNum, const char* funcNamePntr, const char* messageStrPntr);
 WASM_IMPORTED_FUNC void jsStdGrowMemory(unsigned int numPages);
 
 #endif //  _STD_JS_API_H
@@ -20,7 +20,7 @@ WASM_IMPORTED_FUNC void jsStdGrowMemory(unsigned int numPages);
 // +--------------------------------------------------------------+
 /*
 @Functions
-void jsStdAbort(const char* messageStrPntr)
+void jsStdAbort(const char* messageStrPntr, int exitCode)
 void jsStdAssertFailure(const char* filePathPntr, int fileLineNum, const char* funcNamePntr, const char* messageStrPntr)
 void jsStdGrowMemory(unsigned int numPages)
 */

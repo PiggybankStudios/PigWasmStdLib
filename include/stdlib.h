@@ -32,6 +32,8 @@ void* alloca(size_t numBytes);
 
 void qsort(void* basePntr, size_t numItems, size_t itemSize, StdCompareFunc_f* compareFunc);
 
+_Noreturn void exit(int exitCode);
+
 CONDITIONAL_EXTERN_C_END
 
 #endif //  _STDLIB_H
@@ -56,4 +58,5 @@ int rand()
 double atof(const char* str)
 void* alloca(size_t numBytes)
 void qsort(void* basePntr, size_t numItems, size_t itemSize, StdCompareFunc_f* compareFunc)
+void exit(int exitCode)
 */

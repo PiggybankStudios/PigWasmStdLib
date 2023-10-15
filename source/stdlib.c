@@ -179,3 +179,8 @@ void qsort(void* basePntr, size_t numItems, size_t itemSize, StdCompareFunc_f* c
 {
 	__qsort_r(basePntr, numItems, itemSize, WrapperCompareFunc, compareFunc);
 }
+
+_Noreturn void exit(int exitCode)
+{
+	jsStdAbort("exit", exitCode);
+}

@@ -45,7 +45,7 @@ void* WasmMemoryAllocate(uint32_t numBytes)
 	uint32_t numPagesNeeded = (WasmMemoryHeapCurrentAddress + numBytes + 1) / WASM_MEMORY_PAGE_SIZE;
 	if (numPagesNeeded > WASM_MEMORY_MAX_NUM_PAGES)
 	{
-		jsStdAbort("The WebAssembly module has run out of memory! WebAssembly only allows for 2GB of memory to be allocated per module");
+		jsStdAbort("The WebAssembly module has run out of memory! WebAssembly only allows for 2GB of memory to be allocated per module", -1);
 		return nullptr;
 	}
 	else if (WasmMemoryNumPagesAllocated < numPagesNeeded)
