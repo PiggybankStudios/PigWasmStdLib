@@ -6,12 +6,17 @@ Description:
 	** Holds some functions that help us test the standard library implementations without needing a project properly set up
 */
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <float.h>
-#include <math.h>
-#include <assert.h>
-#include <stdbool.h>
+// #include <limits.h>
+// #include <stdlib.h>
+// #include <stdint.h>
+// #include <float.h>
+// #include <math.h>
+// #include <assert.h>
+// #include <stdbool.h>
+// #include <stdarg.h>
+// #include <stdio.h>
+// #include <string.h>
+// #include <intrin.h>
 
 #define WASM_NEW_COMPILATION
 #include "gylib/gy_defines_check.h"
@@ -44,9 +49,9 @@ WASM_EXPORTED_FUNC(void, Initialize)
 	// memset(&someNumber, 0x01, sizeof(someNumber));
 	// jsPrintNumber("someNumber", someNumber);
 	
-	// RunMathTestCases();
-	// RunStringTestCases();
-	// RunStdLibTestCases();
+	RunMathTestCases();
+	RunStringTestCases();
+	RunStdLibTestCases();
 	RunPrintTestCases();
 }
 

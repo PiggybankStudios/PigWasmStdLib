@@ -33,6 +33,8 @@ EXTERN_C_END
 // |                   Autocomplete Dictionary                    |
 // +--------------------------------------------------------------+
 /*
+@Defines
+RAND_MAX
 @Functions
 void* malloc(size_t numBytes)
 void* calloc(size_t numElements, size_t elemSize)

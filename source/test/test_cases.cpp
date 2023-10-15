@@ -549,7 +549,7 @@ void RunMathTestCases()
 
 void RunStringTestCases()
 {
-	u8 testArray[128];
+	uint8_t testArray[128];
 	
 	memset(&testArray[0], 0x01, sizeof(testArray));
 	memset(&testArray[10], 0x02, sizeof(testArray) - 10);

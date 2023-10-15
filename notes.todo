@@ -1,4 +1,6 @@
 
+@ If you use all the functions from this implementation of the standard library, you will make ~733kB wasm binary (currently)
+
 @ NOTE: long double is an allowed type in WASM32 but casting that long double to double results in an import for __trunctfdf2 being generated. We're just not going to use long doubles for now...
 
 @ SourceMaps Specification "https://sourcemaps.info/spec.html"

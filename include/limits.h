@@ -7,14 +7,12 @@ Date:   10\12\2023
 #ifndef _LIMITS_H
 #define _LIMITS_H
 
-//TODO: Collapse this
-#if '\xff' > 0
-#define CHAR_MIN 0
-#define CHAR_MAX 255
-#else
+#include "std_common.h"
+
+EXTERN_C_START
+
 #define CHAR_MIN (-128)
 #define CHAR_MAX 127
-#endif
 
 #define CHAR_BIT 8
 #define SCHAR_MIN (-128)
@@ -34,6 +32,8 @@ Date:   10\12\2023
 #define ULLONG_MAX (2ULL*LLONG_MAX+1)
 
 //TODO: Define PAGESIZE?
+
+EXTERN_C_END
 
 #endif //  _LIMITS_H
 
