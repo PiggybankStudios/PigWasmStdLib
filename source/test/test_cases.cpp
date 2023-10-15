@@ -632,7 +632,7 @@ void RunStdLibTestCases()
 	}
 }
 
-void RunPrintTestCases()
+void RunStdioTestCases()
 {
 	int numCases = 0;
 	int numCasesSucceeded = 0;

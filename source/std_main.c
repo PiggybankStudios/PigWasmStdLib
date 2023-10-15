@@ -7,7 +7,7 @@ Description:
 	** It can be compiled to a position independent lib file, or be included directly in your project
 */
 
-#include "std_common.h"
+#include <internal/std_common.h>
 
 #include "limits.h"
 #include "stdint.h"

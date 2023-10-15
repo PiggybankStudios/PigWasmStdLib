@@ -7,7 +7,7 @@ Date:   10\07\2023
 #ifndef _ASSERT_H
 #define _ASSERT_H
 
-#include "std_common.h"
+#include <internal/std_common.h>
 
 EXTERN_C_START
 

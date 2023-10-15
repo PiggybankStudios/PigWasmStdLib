@@ -7,7 +7,7 @@ Date:   10\07\2023
 #ifndef _STDLIB_H
 #define _STDLIB_H
 
-#include "std_common.h"
+#include <internal/std_common.h>
 #include "stdint.h"
 
 EXTERN_C_START

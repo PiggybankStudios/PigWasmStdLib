@@ -1,6 +1,6 @@
 // ======================= Start of pig_wasm_std_lib.js =======================
 /*
-File:   pig_wasm_std_lib.js
+File:   std_js_api.js
 Author: Taylor Robbins
 Date:   10\07\2023
 Description:

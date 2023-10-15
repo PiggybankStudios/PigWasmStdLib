@@ -10,11 +10,10 @@ Description:
 #ifndef _STD_COMMON_H
 #define _STD_COMMON_H
 
-#include "std_auto_defines.h"
-#include "std_options.h"
-#include "std_constants.h"
-#include "std_macros.h"
-
-#include "pig_wasm_js_api.h"
+#include "internal/std_auto_defines.h"
+#include "internal/std_options.h"
+#include "internal/std_constants.h"
+#include "internal/std_macros.h"
+#include "internal/std_js_api.h"
 
 #endif //  _STD_COMMON_H

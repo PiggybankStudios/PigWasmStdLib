@@ -7,7 +7,7 @@ Date:   10\12\2023
 #ifndef _STRING_H
 #define _STRING_H
 
-#include "std_common.h"
+#include <internal/std_common.h>
 
 EXTERN_C_START
 

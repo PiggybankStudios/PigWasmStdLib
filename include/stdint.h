@@ -8,7 +8,7 @@ NOTE: This file cannot depend on anything but std_common.h
 #ifndef _STDINT_H
 #define _STDINT_H
 
-#include "std_common.h"
+#include <internal/std_common.h>
 
 // +--------------------------------------------------------------+
 // |                           Typedefs                           |

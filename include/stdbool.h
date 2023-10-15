@@ -7,7 +7,7 @@ Date:   10\12\2023
 #ifndef _STDBOOL_H
 #define _STDBOOL_H
 
-#include "std_common.h"
+#include <internal/std_common.h>
 
 #if LANGUAGE_C
 

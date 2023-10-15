@@ -5,6 +5,8 @@ rem The "Safe" name doesn't have spaces or invalid characters and also doesn't c
 set StdLibName=PigWasm StdLib
 set StdLibNameSafe=PigWasmStdLib
 
+set CompileLibrary=1
+set CompileTests=1
 set DebugBuild=1
 set CopyToOutputDir=1
 set ConvertToWat=1
@@ -24,7 +26,7 @@ set StdMainCodePath=%SourceDirectory%\std_main.c
 set TestCodePath=%TestDirectory%\main.cpp
 set TestFileName=%StdLibNameSafe%_Test
 set CombineFilesScript=%WebDirectory%\CombineFiles.py
-set JavascriptFiles=%WebDirectory%\pig_wasm_std_lib.js
+set JavascriptFiles=%WebDirectory%\std_js_api.js
 set JavascriptFiles=%JavascriptFiles% %TestDirectory%\main.js
 set CombinedJsFileName=combined.js
 
@@ -62,21 +64,31 @@ echo[
 
 clang "%TestCodePath%" -c %CompilerFlags% %IncludeDirectories% -o "%TestFileName%_Defines.txt" -dM -E
 
-echo [Compiling...]
-clang "%StdMainCodePath%" -c %CompilerFlags% %IncludeDirectories% -o "%StdLibNameSafe%.o"
-clang "%TestCodePath%" -c %CompilerFlags% %IncludeDirectories% -o "%TestFileName%.o"
-echo [Linking...]
-wasm-ld "%StdLibNameSafe%.o" "%TestFileName%.o" %LinkerFlags% -o %TestFileName%.wasm
-
-if "%ConvertToWat%"=="1" (
-	echo [Creating %TestFileName%.wat]
-	wasm2wat %TestFileName%.wasm > %TestFileName%.wat
+if "%CompileLibrary%"=="1" (
+	echo [Compiling PigWasmStdLib...]
+	clang "%StdMainCodePath%" %CompilerFlags% %IncludeDirectories% -Wl,--relocatable -o "%StdLibNameSafe%.wasm"
+	
+	if "%CopyToOutputDir%"=="1" (
+		XCOPY %StdLibNameSafe%.wasm "%LibOutputDirectory%\" /Y > NUL
+	)
 )
 
-python %CombineFilesScript% %CombinedJsFileName% %JavascriptFiles%
-
-if "%CopyToOutputDir%"=="1" (
-	echo [Copying %TestFileName%.wasm to %TestOutputDirectory%]
-	XCOPY %TestFileName%.wasm "%TestOutputDirectory%\" /Y > NUL
-	XCOPY %CombinedJsFileName% "%TestOutputDirectory%\" /Y > NUL
+if "%CompileTests%"=="1" (
+	echo [Compiling Tests...]
+	clang "%TestCodePath%" -c %CompilerFlags% %IncludeDirectories% -o "%TestFileName%.o"
+	echo [Linking...]
+	wasm-ld "%StdLibNameSafe%.wasm" "%TestFileName%.o" %LinkerFlags% -o %TestFileName%.wasm
+	
+	if "%ConvertToWat%"=="1" (
+		echo [Creating %TestFileName%.wat]
+		wasm2wat %TestFileName%.wasm > %TestFileName%.wat
+	)
+	
+	python %CombineFilesScript% %CombinedJsFileName% %JavascriptFiles%
+	
+	if "%CopyToOutputDir%"=="1" (
+		echo [Copying %TestFileName%.wasm to %TestOutputDirectory%]
+		XCOPY %TestFileName%.wasm "%TestOutputDirectory%\" /Y > NUL
+		XCOPY %CombinedJsFileName% "%TestOutputDirectory%\" /Y > NUL
+	)
 )

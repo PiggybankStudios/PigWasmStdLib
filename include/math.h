@@ -7,7 +7,7 @@ Date:   09\23\2023
 #ifndef _MATH_H
 #define _MATH_H
 
-#include "std_common.h"
+#include <internal/std_common.h>
 
 EXTERN_C_START
 

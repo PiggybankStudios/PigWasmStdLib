@@ -8,7 +8,7 @@ NOTE: This file cannot depend on anything but std_common.h
 #ifndef _FLOAT_H
 #define _FLOAT_H
 
-#include "std_common.h"
+#include <internal/std_common.h>
 
 EXTERN_C_START
 

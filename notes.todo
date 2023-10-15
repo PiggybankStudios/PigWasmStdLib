@@ -1,5 +1,9 @@
 
-@ If you use all the functions from this implementation of the standard library, you will make ~733kB wasm binary (currently)
+@ If you use all the functions from this implementation of the standard library, you will make ~218kB wasm binary (currently, 733kB debug)
+	@ 156kb - math.c
+	@ 53 kB - stdio.c
+	@ 11 kB - stdlib.c
+	@ 2 kB - string.c
 
 @ NOTE: long double is an allowed type in WASM32 but casting that long double to double results in an import for __trunctfdf2 being generated. We're just not going to use long doubles for now...
 
@@ -9,6 +13,21 @@
 @ Wasm explorer "https://mbebenita.github.io/WasmExplorer/"
 
 - "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.37.32822\include\vcruntime.h"
+
+#if 0
+int AssemblyFunc(int x)
+{
+	int myLocalVar = 213;
+	__asm__ __volatile__
+	(
+		"i32.const 15\n"
+		"i32.const 17\n"
+		"i32.add\n"
+		// "i32.store offset=8\n"
+	);
+	return myLocalVar;
+}
+#endif
 
 # WebAssembly Clang Compiler Options
 	-matomics, -mno-atomics
