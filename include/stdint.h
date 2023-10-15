@@ -53,7 +53,7 @@ typedef unsigned _Int64 uintmax_t;
 
 // typedef unsigned        mode_t;
 // typedef unsigned _Reg   nlink_t;
-// typedef _Int64          off_t;
+typedef _Int64          off_t;
 // typedef unsigned _Int64 ino_t;
 // typedef unsigned _Int64 dev_t;
 // typedef long            blksize_t;
@@ -169,4 +169,5 @@ uint32_t
 uint64_t
 u_int64_t
 uintmax_t
+off_t
 */

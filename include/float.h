@@ -51,21 +51,24 @@ EXTERN_C_START
 #define DBL_MAX_10_EXP   308
 
 //NOTE: long double is an allowed type in WASM32 but casting that long double to double results in an import for __trunctfdf2 being generated. We're just not going to use long doubles for now...
-// #define LDBL_HAS_SUBNORM 1
-// #define LDBL_DECIMAL_DIG DECIMAL_DIG
+//TODO: We are turning these back on and using them for __floatscan which drives musl's implementation for atof
+#if 1
+#define LDBL_HAS_SUBNORM 1
+#define LDBL_DECIMAL_DIG DECIMAL_DIG
 
-// #define LDBL_TRUE_MIN    6.47517511943802511092443895822764655e-4966L
-// #define LDBL_MIN         3.36210314311209350626267781732175260e-4932L
-// #define LDBL_MAX         1.18973149535723176508575932662800702e+4932L
-// #define LDBL_EPSILON     1.92592994438723585305597794258492732e-34L
+#define LDBL_TRUE_MIN    6.47517511943802511092443895822764655e-4966L
+#define LDBL_MIN         3.36210314311209350626267781732175260e-4932L
+#define LDBL_MAX         1.18973149535723176508575932662800702e+4932L
+#define LDBL_EPSILON     1.92592994438723585305597794258492732e-34L
 
-// #define LDBL_MANT_DIG    113
-// #define LDBL_MIN_EXP     (-16381)
-// #define LDBL_MAX_EXP     16384
+#define LDBL_MANT_DIG    113
+#define LDBL_MIN_EXP     (-16381)
+#define LDBL_MAX_EXP     16384
 
-// #define LDBL_DIG         33
-// #define LDBL_MIN_10_EXP  (-4931)
-// #define LDBL_MAX_10_EXP  4932
+#define LDBL_DIG         33
+#define LDBL_MIN_10_EXP  (-4931)
+#define LDBL_MAX_10_EXP  4932
+#endif
 
 #define DECIMAL_DIG      36
 

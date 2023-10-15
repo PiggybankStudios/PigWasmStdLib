@@ -236,6 +236,8 @@
 		],
 		"custom_types":
 		[
+			"File_t",
+			"IoFile_t",
 			"double_t",
 			"float_t",
 			"int16_t",
@@ -245,6 +247,7 @@
 			"intmax_t",
 			"intptr_t",
 			"ldshape",
+			"off_t",
 			"ptrdiff_t",
 			"size_t",
 			"ssize_t",
