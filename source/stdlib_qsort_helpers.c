@@ -77,7 +77,7 @@ void shiftRight(size_t array[2], int numBits)
 	array[1] >>= numBits;
 }
 
-void sift(unsigned char* headPntr, size_t itemSize, CompareFuncEx_f* compareFunc, void* argPntr, int pshift, size_t wordArray[])
+void sift(unsigned char* headPntr, size_t itemSize, StdCompareFuncEx_f* compareFunc, void* argPntr, int pshift, size_t wordArray[])
 {
 	unsigned char* rightPntr;
 	unsigned char* leftPntr;
@@ -112,7 +112,7 @@ void sift(unsigned char* headPntr, size_t itemSize, CompareFuncEx_f* compareFunc
 	cycle(itemSize, array, index);
 }
 
-void trinkle(unsigned char* headPntr, size_t itemSize, CompareFuncEx_f* compareFunc, void* compareFuncRaw, size_t twoWords[2], int pshift, int trusty, size_t wordArray[])
+void trinkle(unsigned char* headPntr, size_t itemSize, StdCompareFuncEx_f* compareFunc, void* compareFuncRaw, size_t twoWords[2], int pshift, int trusty, size_t wordArray[])
 {
 	unsigned char* stepson;
 	unsigned char* rightPntr;
@@ -158,7 +158,7 @@ void trinkle(unsigned char* headPntr, size_t itemSize, CompareFuncEx_f* compareF
 	}
 }
 
-void __qsort_r(void* basePntr, size_t numItems, size_t itemSize, CompareFuncEx_f* compareFunc, void* compareFuncRaw)
+void __qsort_r(void* basePntr, size_t numItems, size_t itemSize, StdCompareFuncEx_f* compareFunc, void* compareFuncRaw)
 {
 	size_t localStorage[12 * sizeof(size_t)];
 	size_t index;
@@ -241,5 +241,5 @@ void __qsort_r(void* basePntr, size_t numItems, size_t itemSize, CompareFuncEx_f
 
 int WrapperCompareFunc(const void* left, const void* right, void* compareFunc)
 {
-	return ((CompareFunc_f*)compareFunc)(left, right);
+	return ((StdCompareFunc_f*)compareFunc)(left, right);
 }

@@ -175,7 +175,7 @@ void* alloca(size_t numBytes)
 
 #include "stdlib_qsort_helpers.c"
 
-void qsort(void* basePntr, size_t numItems, size_t itemSize, CompareFunc_f* compareFunc)
+void qsort(void* basePntr, size_t numItems, size_t itemSize, StdCompareFunc_f* compareFunc)
 {
 	__qsort_r(basePntr, numItems, itemSize, WrapperCompareFunc, compareFunc);
 }

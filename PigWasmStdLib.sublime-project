@@ -262,7 +262,7 @@
 			"void jsStdAbort(const char* messageStrPntr)",
 			"void jsStdAssertFailure(const char* filePathPntr, int fileLineNum, const char* funcNamePntr, const char* messageStrPntr)",
 			"void jsStdGrowMemory(unsigned int numPages)",
-			"void qsort(void* basePntr, size_t numItems, size_t itemSize, CompareFunc_f* compareFunc)",
+			"void qsort(void* basePntr, size_t numItems, size_t itemSize, StdCompareFunc_f* compareFunc)",
 			"void srand(unsigned int seed)",
 			"void* WasmMemoryAllocate(uint32_t numBytes)",
 			"void* aligned_alloc(size_t numBytes, size_t alignmentSize)",
@@ -280,9 +280,9 @@
 		],
 		"custom_types":
 		[
-			"CompareFunc_f",
 			"File_t",
 			"IoFile_t",
+			"StdCompareFunc_f",
 			"double_t",
 			"float_t",
 			"int16_t",
