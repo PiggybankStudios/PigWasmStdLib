@@ -1,5 +1,9 @@
 musl_libc/
-lib/
+lib/include/
+lib/debug/*
+!lib/debug/placeholder.txt
+lib/release/*
+!lib/release/placeholder.txt
 build/*
 !build/build.bat
 *.sublime-workspace

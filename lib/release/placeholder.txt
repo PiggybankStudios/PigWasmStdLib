@@ -1,0 +1,1 @@
+This is where the RELEASE compiled version of PigWasmStdLib.wasm will go. This file just makes sure the directory exists in the git repository
