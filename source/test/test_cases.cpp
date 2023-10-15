@@ -549,27 +549,73 @@ void RunMathTestCases()
 
 void RunStringTestCases()
 {
+	int numCases = 0;
+	int numCasesSucceeded = 0;
 	uint8_t testArray[128];
+	uint8_t testArray2[128];
 	
-	memset(&testArray[0], 0x01, sizeof(testArray));
-	memset(&testArray[10], 0x02, sizeof(testArray) - 10);
+	memset(&testArray[0], 'A', sizeof(testArray));
+	memset(&testArray[10], 'b', sizeof(testArray) - 10);
 	testArray[127] = 0;
-	memcpy(&testArray[0], &testArray[8], 4);
-	for (int bIndex = 0; bIndex < sizeof(testArray); bIndex++)
-	{
-		jsPrintInteger("", testArray[bIndex]);
-	}
-	jsPrintInteger("memcmp", memcmp(&testArray[0], &testArray[0], 5));
-	jsPrintInteger("strncmp", strncmp((const char*)&testArray[0], (const char*)&testArray[0], 5));
-	jsPrintInteger("strlen", strlen((char*)&testArray[0]));
-	jsPrintInteger("wcslen", wcslen((wchar_t*)&testArray[0]));
+	memmove(&testArray[0], &testArray[8], 4);
+	// for (int bIndex = 0; bIndex < sizeof(testArray); bIndex++) { jsPrintInteger("", testArray[bIndex]); }
 	
 	//TODO: Add test cases for memset
-	//TODO: Add test cases for memcmp
+	
 	//TODO: Add test cases for memcpy
-	//TODO: Add test cases for strncmp
-	//TODO: Add test cases for strlen
-	//TODO: Add test cases for wcslen
+	
+	TestCaseInt(memcmp(&testArray[0], &testArray[0], 5), 0);
+	TestCaseInt(memcmp(&testArray[0], &testArray[5], 5), 33);
+	TestCaseInt(memcmp(&testArray[5], &testArray[0], 5), -33);
+	
+	//TODO: Add test cases for memmove
+	
+	strcpy((char*)&testArray2[0], (char*)&testArray[0]);
+	for (int bIndex = 0; bIndex < sizeof(testArray2); bIndex++) { jsPrintInteger("", testArray2[bIndex]); }
+	TestCaseInt(testArray2[0], 'A');
+	TestCaseInt(testArray2[1], 'A');
+	TestCaseInt(testArray2[2], 'b');
+	TestCaseInt(testArray2[3], 'b');
+	TestCaseInt(testArray2[4], 'A');
+	TestCaseInt(testArray2[10], 'b');
+	TestCaseInt(testArray2[127], '\0');
+	
+	//TODO: Add test cases for strstr
+	char* substr1 = strstr((char*)&testArray[0], "AA");
+	jsPrintInteger("substr1", (int)(substr1 - (char*)&testArray[0]));
+	char* substr2 = strstr((char*)&testArray[0], "bbAA");
+	jsPrintInteger("substr2", (int)(substr2 - (char*)&testArray[0]));
+	char* substr3 = strstr((char*)&testArray[0], "AAAA");
+	jsPrintInteger("substr3", (int)(substr3 - (char*)&testArray[0]));
+	char* substr4 = strstr((char*)&testArray[0], "bbbb");
+	jsPrintInteger("substr4", (int)(substr4 - (char*)&testArray[0]));
+	char* substr5 = strstr((char*)&testArray[0], "b");
+	jsPrintInteger("substr5", (int)(substr5 - (char*)&testArray[0]));
+	char* substr6 = strstr((char*)&testArray[0], "AAbbAAAAAAbb");
+	jsPrintInteger("substr6", (int)(substr6 - (char*)&testArray[0]));
+	
+	TestCaseInt(strcmp((char*)&testArray[0], (char*)&testArray[0]), 0);
+	TestCaseInt(strcmp((char*)&testArray[0], (char*)&testArray[1]), -33);
+	TestCaseInt(strcmp((char*)&testArray[1], (char*)&testArray[0]), 33);
+	
+	TestCaseInt(strncmp((char*)&testArray[0], (char*)&testArray[0], 5), 0);
+	TestCaseInt(strncmp((char*)&testArray[0], (char*)&testArray[5], 5), 33);
+	TestCaseInt(strncmp((char*)&testArray[5], (char*)&testArray[0], 5), -33);
+	
+	TestCaseInt(strlen((char*)&testArray[0]), 127);
+	
+	TestCaseInt(wcslen((wchar_t*)&testArray[0]), 32);
+	
+	if (numCasesSucceeded == numCases)
+	{
+		jsPrintInteger("All String Tests Succeeded", numCases);
+	}
+	else
+	{
+		jsPrintInteger("Some String Tests Failed", numCases);
+		jsPrintInteger("Successes", numCasesSucceeded);
+		jsPrintInteger("Failures", numCases - numCasesSucceeded);
+	}
 }
 
 void RunStdLibTestCases()

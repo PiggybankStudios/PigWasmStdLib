@@ -11,9 +11,21 @@ Description:
 #define PIG_WASM_STD_USE_BUILTIN_MEMSET  1
 #define PIG_WASM_STD_USE_BUILTIN_MEMCMP  0 //calls itself
 #define PIG_WASM_STD_USE_BUILTIN_MEMCPY  1
+#define PIG_WASM_STD_USE_BUILTIN_MEMMOVE 1
+#define PIG_WASM_STD_USE_BUILTIN_STRCPY  0 //calls itself
+#define PIG_WASM_STD_USE_BUILTIN_STRSTR  0 //calls itself
+#define PIG_WASM_STD_USE_BUILTIN_STRCMP  0 //calls itself
 #define PIG_WASM_STD_USE_BUILTIN_STRNCMP 0 //calls itself
 #define PIG_WASM_STD_USE_BUILTIN_STRLEN  0 //calls itself
 #define PIG_WASM_STD_USE_BUILTIN_WCSLEN  0 //calls itself
+
+#define WORD_CONTAINS_ZERO(word) ((word)-((size_t)-1/UCHAR_MAX) & ~(word) & (((size_t)-1/UCHAR_MAX) * (UCHAR_MAX/2+1)))
+
+#define MAX(left, right) ((left) > (right) ? (left) : (right))
+#define MIN(left, right) ((left) < (right) ? (left) : (right))
+
+typedef size_t __attribute__((__may_alias__)) a_size_t;
+#define SIZEOF_A_SIZE_T sizeof(a_size_t)
 
 void* _memset(void* pntr, int value, size_t numBytes)
 {
@@ -107,7 +119,7 @@ int memcmp(const void* left, const void* right, size_t numBytes)
 	#else
 	const unsigned char *leftByte = left, *rightByte = right;
 	for (; (numBytes && *leftByte == *rightByte); numBytes--, leftByte++, rightByte++);
-	return (numBytes ? *leftByte - *rightByte : 101);
+	return (numBytes ? *leftByte - *rightByte : 0);
 	#endif
 }
 
@@ -273,19 +285,135 @@ void* _memcpy(void* dest, const void* source, size_t numBytes)
 	#endif
 }
 
+void* _memmove(void* dest, const void* source, size_t numBytes)
+{
+	#if PIG_WASM_STD_USE_BUILTIN_MEMMOVE
+	return __builtin_memmove(dest, source, numBytes);
+	#else
+	char* destCharPntr = dest;
+	const char* sourceCharPntr = source;
+	
+	if (destCharPntr == sourceCharPntr) { return destCharPntr; }
+	if ((uintptr_t)sourceCharPntr - (uintptr_t)destCharPntr - numBytes <= -2 * numBytes)
+	{
+		return memcpy(destCharPntr, sourceCharPntr, numBytes);
+	}
+	
+	if (destCharPntr < sourceCharPntr)
+	{
+		if ((uintptr_t)sourceCharPntr % SIZEOF_A_SIZE_T == (uintptr_t)destCharPntr % SIZEOF_A_SIZE_T)
+		{
+			while ((uintptr_t)destCharPntr % SIZEOF_A_SIZE_T)
+			{
+				if (!numBytes--) { return dest; }
+				*destCharPntr++ = *sourceCharPntr++;
+			}
+			for (; numBytes >= SIZEOF_A_SIZE_T; numBytes -= SIZEOF_A_SIZE_T, destCharPntr += SIZEOF_A_SIZE_T, sourceCharPntr += SIZEOF_A_SIZE_T)
+			{
+				*(a_size_t*)destCharPntr = *(a_size_t*)sourceCharPntr;
+			}
+		}
+		for (; numBytes; numBytes--) { *destCharPntr++ = *sourceCharPntr++; }
+	}
+	else
+	{
+		if (((uintptr_t)sourceCharPntr % SIZEOF_A_SIZE_T) == ((uintptr_t)destCharPntr % SIZEOF_A_SIZE_T))
+		{
+			while ((uintptr_t)(destCharPntr + numBytes) % SIZEOF_A_SIZE_T)
+			{
+				if (!numBytes--) { return dest; }
+				destCharPntr[numBytes] = sourceCharPntr[numBytes];
+			}
+			while (numBytes >= SIZEOF_A_SIZE_T)
+			{
+				numBytes -= SIZEOF_A_SIZE_T;
+				*(a_size_t*)(destCharPntr+numBytes) = *(a_size_t*)(sourceCharPntr + numBytes);
+			}
+		}
+		while (numBytes)
+		{
+			numBytes--;
+			destCharPntr[numBytes] = sourceCharPntr[numBytes];
+		}
+	}
+	
+	return dest;
+	#endif
+}
+
+char* strcpy(char* dest, const char* source)
+{
+	#if PIG_WASM_STD_USE_BUILTIN_STRCPY
+	return __builtin_strcpy(dest, source);
+	#else
+	a_size_t* destWord;
+	const a_size_t* sourceWord;
+	if ((uintptr_t)source % sizeof(size_t) == (uintptr_t)dest % sizeof(size_t))
+	{
+		for (; (uintptr_t)source % sizeof(size_t); source++, dest++)
+		{
+			if (!(*dest=*source)) { return dest; }
+		}
+		destWord = (void*)dest;
+		sourceWord = (const void*)source;
+		for (; !WORD_CONTAINS_ZERO(*sourceWord); *destWord++ = *sourceWord++) { }
+		dest=(void*)destWord;
+		source=(const void*)sourceWord;
+	}
+	for (; (*dest=*source); source++, dest++) { }
+
+	return dest;
+	#endif
+}
+
+#if !PIG_WASM_STD_USE_BUILTIN_STRSTR
+#include "string_strstr_helpers.c"
+#endif
+
+char* strstr(const char* haystack, const char* needle)
+{
+	#if PIG_WASM_STD_USE_BUILTIN_STRSTR
+	return __builtin_strstr(haystack, needle);
+	#else
+	// Return immediately on empty needle
+	if (!needle[0]) { return (char*)haystack; }
+	
+	// Use faster algorithms for short needles
+	haystack = strchr(haystack, *needle);
+	if (!haystack || !needle[1]) { return (char *)haystack; }
+	if (!haystack[1]) { return 0; }
+	if (!needle[2]) { return twobyte_strstr((void *)haystack, (void *)needle); }
+	if (!haystack[2]) { return 0; }
+	if (!needle[3]) { return threebyte_strstr((void *)haystack, (void *)needle); }
+	if (!haystack[3]) { return 0; }
+	if (!needle[4]) { return fourbyte_strstr((void *)haystack, (void *)needle); }
+	
+	return twoway_strstr((void *)haystack, (void *)needle);
+	#endif
+}
+
+int strcmp(const char* left, const char* right)
+{
+	#if PIG_WASM_STD_USE_BUILTIN_STRCMP
+	return __builtin_strcmp(left, right);
+	#else
+	for (; *left == *right && *left; left++, right++);
+	return (*(unsigned char*)left - *(unsigned char*)right);
+	#endif
+}
+
 int strncmp(const char* left, const char* right, size_t numBytes)
 {
 	#if PIG_WASM_STD_USE_BUILTIN_STRNCMP
 	return __builtin_strncmp(left, right, numBytes);
 	#else
-	const unsigned char *leftPntr = (void *)left, *rightPntr = (void *)right;
+	const unsigned char* leftPntr = (void*)left;
+	const unsigned char* rightPntr = (void*)right;
 	if (!numBytes--) { return 0; }
 	for (; (*leftPntr && *rightPntr && numBytes && *leftPntr == *rightPntr); leftPntr++, rightPntr++, numBytes--);
 	return *leftPntr - *rightPntr;
 	#endif
 }
-
-#define WORD_CONTAINS_ZERO(word) ((word)-((size_t)-1/UCHAR_MAX) & ~(word) & (((size_t)-1/UCHAR_MAX) * (UCHAR_MAX/2+1)))
 
 size_t strlen(const char* str)
 {
@@ -293,7 +421,6 @@ size_t strlen(const char* str)
 	return __builtin_strlen(str);
 	#else
 	const char* startPntr = str;
-	typedef size_t __attribute__((__may_alias__)) a_size_t;
 	const a_size_t* wordPntr;
 	for (; ((uintptr_t)str % sizeof(size_t)) != 0; str++)
 	{
