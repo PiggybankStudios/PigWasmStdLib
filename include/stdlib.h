@@ -12,6 +12,9 @@ Date:   10\07\2023
 
 CONDITIONAL_EXTERN_C_START
 
+typedef int (CompareFunc_f)(const void* left, const void* right);
+typedef int (CompareFuncEx_f)(const void* left, const void* right, void* compareFunc);
+
 int abs(int value);
 
 void* malloc(size_t numBytes);
@@ -27,6 +30,8 @@ int rand();
 double atof(const char* str);
 void* alloca(size_t numBytes);
 
+void qsort(void* basePntr, size_t numItems, size_t itemSize, CompareFunc_f* compareFunc);
+
 CONDITIONAL_EXTERN_C_END
 
 #endif //  _STDLIB_H
@@ -37,7 +42,10 @@ CONDITIONAL_EXTERN_C_END
 /*
 @Defines
 RAND_MAX
+@Types
+CompareFunc_f
 @Functions
+int abs(int value)
 void* malloc(size_t numBytes)
 void* calloc(size_t numElements, size_t elemSize)
 void* realloc(void* prevAllocPntr, size_t newSize)
@@ -47,4 +55,5 @@ void srand(unsigned int seed)
 int rand()
 double atof(const char* str)
 void* alloca(size_t numBytes)
+void qsort(void* basePntr, size_t numItems, size_t itemSize, CompareFunc_f* compareFunc)
 */

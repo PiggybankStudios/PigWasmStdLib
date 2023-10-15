@@ -172,3 +172,10 @@ void* alloca(size_t numBytes)
 {
 	return __builtin_alloca(numBytes);
 }
+
+#include "stdlib_qsort_helpers.c"
+
+void qsort(void* basePntr, size_t numItems, size_t itemSize, CompareFunc_f* compareFunc)
+{
+	__qsort_r(basePntr, numItems, itemSize, WrapperCompareFunc, compareFunc);
+}

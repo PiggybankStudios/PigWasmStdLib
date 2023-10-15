@@ -634,6 +634,14 @@ void RunStringTestCases()
 	}
 }
 
+int CompareU32(const void* left, const void* right)
+{
+	uint32_t* leftU32 = (uint32_t*)left;
+	uint32_t* rightU32 = (uint32_t*)right;
+	if (*leftU32 == *rightU32) { return 0; }
+	return ((*leftU32 > *rightU32) ? 1 : -1);
+}
+
 void RunStdLibTestCases()
 {
 	int numCases = 0;
@@ -687,6 +695,15 @@ void RunStdLibTestCases()
 	TestCaseDouble(atof("3.1e2"), 3.1e2);
 	TestCaseDouble(atof("3.1e-2"), 0.031000000923872003); //pretty close to 0.031
 	TestCaseDouble(atof("1.23e-20"), 0.000000000000000000012300003665686174); //pretty close to 0.0...0123
+	
+	uint32_t elements[] = { 1, 5, 7, 2, 6, 4, 3, 8 };
+	const int numElements = (sizeof(elements) / sizeof(uint32_t));
+	qsort(elements, numElements, sizeof(uint32_t), CompareU32);
+	for (int eIndex = 0; eIndex < numElements; eIndex++)
+	{
+		jsPrintInteger("", elements[eIndex]);
+	}
+	//TODO: Add tests for qsort
 	
 	if (numCasesSucceeded == numCases)
 	{

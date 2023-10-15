@@ -81,6 +81,7 @@ int vsnprintf(char* bufferPntr, size_t bufferSize, const char* formatStr, va_lis
 ```
 ### stdlib.h
 ```cpp
+int abs(int value);
 void* malloc(size_t numBytes);
 void* calloc(size_t numElements, size_t elemSize); //stub, will assert on call
 void* realloc(void* prevAllocPntr, size_t newSize); //stub, will assert on call
@@ -90,6 +91,7 @@ void srand(unsigned int seed);
 int rand();
 double atof(const char* str);
 void* alloca(size_t numBytes);
+void qsort(void* basePntr, size_t numItems, size_t itemSize, CompareFunc_f* compareFunc);
 ```
 ### string.h
 ```cpp
