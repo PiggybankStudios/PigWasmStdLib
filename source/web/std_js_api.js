@@ -14,10 +14,13 @@ Description:
 // +--------------------------------------------------------------+
 // |                           Globals                            |
 // +--------------------------------------------------------------+
-var globalCanvas = null;
-var globalGlContext = null;
-var globalWasmMemory = null;
-var globalWasmModule = null;
+var stdGlobals =
+{
+	canvas: null,
+	glContext: null,
+	wasmMemory: null,
+	wasmModule: null,
+};
 
 // +--------------------------------------------------------------+
 // |                       Helper Functions                       |
@@ -66,16 +69,16 @@ function wasmPntrToJsString(memory, ptr)
 // +--------------------------------------------------------------+
 function jsAbort(messageStrPntr)
 {
-	let messageStr = wasmPntrToJsString(globalWasmMemory, messageStrPntr);
+	let messageStr = wasmPntrToJsString(stdGlobals.wasmMemory, messageStrPntr);
 	console.error("Abort:", messageStr);
 	throw new Error(messageStr);
 }
 
 function jsAssertFailure(filePathPntr, fileLineNum, funcNamePntr, messageStrPntr)
 {
-	let filePath = wasmPntrToJsString(globalWasmMemory, filePathPntr);
-	let funcName = wasmPntrToJsString(globalWasmMemory, funcNamePntr);
-	let messageStr = wasmPntrToJsString(globalWasmMemory, messageStrPntr);
+	let filePath = wasmPntrToJsString(stdGlobals.wasmMemory, filePathPntr);
+	let funcName = wasmPntrToJsString(stdGlobals.wasmMemory, funcNamePntr);
+	let messageStr = wasmPntrToJsString(stdGlobals.wasmMemory, messageStrPntr);
 	let outputMessage = "Assertion failed! (" + messageStr + ") is not true! In " + filePath + ":" + fileLineNum + " " + funcName + "(...)";
 	console.error(outputMessage);
 	throw new Error(outputMessage);
@@ -84,7 +87,7 @@ function jsAssertFailure(filePathPntr, fileLineNum, funcNamePntr, messageStrPntr
 function jsGrowMemory(numPages)
 {
 	// console.log("Memory growing by " + numPages + " pages");
-	globalWasmMemory.grow(numPages);
+	stdGlobals.wasmMemory.grow(numPages);
 }
 
 function jsTestFunction()
@@ -94,20 +97,20 @@ function jsTestFunction()
 
 function jsPrintNumber(labelStrPntr, number)
 {
-	let labelStr = wasmPntrToJsString(globalWasmMemory, labelStrPntr);
+	let labelStr = wasmPntrToJsString(stdGlobals.wasmMemory, labelStrPntr);
 	console.log(labelStr + ": " + number + " (0x" + number.toString(16) + ")");
 }
 
 function jsPrintFloat(labelStrPntr, number)
 {
-	let labelStr = wasmPntrToJsString(globalWasmMemory, labelStrPntr);
+	let labelStr = wasmPntrToJsString(stdGlobals.wasmMemory, labelStrPntr);
 	console.log(labelStr + ": " + number);
 }
 
 function jsPrintString(labelStrPntr, strPntr)
 {
-	let labelStr = wasmPntrToJsString(globalWasmMemory, labelStrPntr);
-	let str = wasmPntrToJsString(globalWasmMemory, strPntr);
+	let labelStr = wasmPntrToJsString(stdGlobals.wasmMemory, labelStrPntr);
+	let str = wasmPntrToJsString(stdGlobals.wasmMemory, strPntr);
 	console.log(labelStr + ": " + str);
 }
 
@@ -140,6 +143,7 @@ function PigWasm_AcquireCanvas(canvasWidth, canvasHeight)
 	
 	// canvasContainer = document.getElementById("canvas_container");
 	// console.assert(canvasContainer != null, "Couldn't find canvas container DOM element!");
+	stdGlobals.canvas = canvas;
 	return canvas;
 }
 
@@ -148,12 +152,14 @@ function PigWasm_CreateGlContext(canvas)
 	canvasContextGl = canvas.getContext("webgl2");
 	if (canvasContextGl === null) { console.error("Unable to initialize WebGL render context. Your browser or machine may not support it :("); return null; }
 	// console.log(canvasContextGl);
+	stdGlobals.glContext = canvasContextGl;
 	return canvasContextGl;
 }
 
 function PigWasm_InitMemory(initialMemPageCount)
 {
 	wasmMemory = new WebAssembly.Memory({ initial: initialMemPageCount });
+	stdGlobals.wasmMemory = wasmMemory;
 	return wasmMemory
 }
 
@@ -172,6 +178,7 @@ async function PigWasm_Init(wasmMemory, initialMemPageCount, wasmFilePath)
 	
 	wasmModule.exports.InitStdLib(initialMemPageCount);
 	
+	stdGlobals.wasmModule = wasmModule;
 	return wasmModule;
 }
 
