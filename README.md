@@ -3,7 +3,7 @@ This is a very minimal implementation of various C standard library functions an
 
 # Sources
 ### [Musl Lib-C](https://musl.libc.org/)
-### [Sean Barrett's Stb](https://musl.libc.org/)
+### [Sean Barrett's Stb](https://github.com/nothings/stb/)
 
 Many of the implementations are based on functions from [musl libc](https://musl.libc.org/) but almost all have been reformatted and updated to make them a bit more readable (for me at least). Some of the functions have been significantly changed though (like atof) and vsnprintf uses [stb_sprintf.h](https://github.com/nothings/stb/blob/master/stb_sprintf.h). Also the structure of the .c files is majorly redone so it's clearer when dependencies are used by which functions. We also use __builtin\_[func] calls wherever we can to utilize WASM instructions (like memory.fill) or Clang's builtin implementations (like fabs or va_start).
 
@@ -17,15 +17,15 @@ void jsStdGrowMemory(unsigned int numPages);
 
 # Functions
 Some functions are ommitted for brevity sake. If you want to see the full list, just open one of the header files in the include/ folder
-## assert.h
+### assert.h
 ```cpp
 void assert(bool condition); //macro
 ```
-## intrin.h
+### intrin.h
 ```cpp
 void __debugbreak(); //TODO: Currently empty
 ```
-## math.h
+### math.h
 ```cpp
 bool isinf(double/float value); //macro
 bool isnan(double/float value); //macro
@@ -59,22 +59,22 @@ float  log10f(float value);                    double log10(double value);
 float  ldexpf(float value, int exponent);      double ldexp(double value, int exponent);
 float  copysignf(float magnitude, float sign); double copysign(double magnitude, double sign);
 ```
-## new
+### new
 ```cpp
 //Currently empty, just sits here to satisfy an annoying #include
 ```
-## stdarg.h
+### stdarg.h
 ```cpp
 void va_start(va_list args, const char* formatStr); //macro
 void va_end(va_list args); //macro
 void va_arg(va_list args, type); //macro
 void va_copy(va_list dest, va_list source); //macro
 ```
-## stdio.h
+### stdio.h
 ```cpp
 int vsnprintf(char* bufferPntr, size_t bufferSize, const char* formatStr, va_list args);
 ```
-## stdlib.h
+### stdlib.h
 ```cpp
 void* malloc(size_t numBytes);
 void* calloc(size_t numElements, size_t elemSize); //stub, will assert on call
@@ -86,7 +86,7 @@ int rand();
 double atof(const char* str);
 void* alloca(size_t numBytes);
 ```
-## string.h
+### string.h
 ```cpp
 void* memset(void* pntr, int value, size_t numBytes);
 int memcmp(const void* left, const void* right, size_t numBytes);
@@ -97,7 +97,11 @@ size_t wcslen(const wchar_t* str);
 ```
 
 # Types
-## stdint.h
+### stdarg.h
+```cpp
+va_list
+```
+### stdint.h
 ```cpp
 wchar_t
 float_t, double_t
@@ -108,7 +112,7 @@ uint8_t, uint16_t, uint32_t, uint64_t, u_int64_t, uintmax_t
 ```
 
 # Defines
-## float.h
+### float.h
 ```cpp
 FLT_RADIX
 FLT_TRUE_MIN
@@ -137,7 +141,7 @@ DBL_MIN_10_EXP
 DBL_MAX_10_EXP
 DECIMAL_DIG
 ```
-## limits.h
+### limits.h
 ```cpp
 CHAR_MIN
 CHAR_MAX
@@ -158,18 +162,18 @@ LLONG_MIN
 LLONG_MAX
 ULLONG_MAX
 ```
-## stdbool.h
+### stdbool.h
 ```cpp
 true
 false
 bool
 __bool_true_false_are_defined
 ```
-## stddef.h
+### stddef.h
 ```cpp
 //Currently empty
 ```
-## stdint.h
+### stdint.h
 ```cpp
 _Addr
 _Int64
