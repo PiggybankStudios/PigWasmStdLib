@@ -6,7 +6,7 @@ set StdLibName=PigWasm StdLib
 set StdLibNameSafe=PigWasmStdLib
 
 set CompileLibrary=1
-set CompileTests=1
+set CompileTests=0
 set DebugBuild=1
 set CopyToOutputDir=1
 set ConvertToWat=1
