@@ -62,13 +62,14 @@ rem +--------------------------------------------------------------+
 
 echo[
 
-clang "%TestCodePath%" -c %CompilerFlags% %IncludeDirectories% -o "%TestFileName%_Defines.txt" -dM -E
+rem clang "%TestCodePath%" -c %CompilerFlags% %IncludeDirectories% -o "%TestFileName%_Defines.txt" -dM -E
 
 if "%CompileLibrary%"=="1" (
 	echo [Compiling PigWasmStdLib...]
 	clang "%StdMainCodePath%" %CompilerFlags% %IncludeDirectories% -Wl,--relocatable -o "%StdLibNameSafe%.wasm"
 	
 	if "%CopyToOutputDir%"=="1" (
+		echo [Copying %StdLibNameSafe%.wasm to %LibOutputDirectory%...]
 		XCOPY %StdLibNameSafe%.wasm "%LibOutputDirectory%\" /Y > NUL
 	)
 )
