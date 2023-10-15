@@ -23,7 +23,4 @@ WASM_IMPORTED_FUNC void jsStdGrowMemory(unsigned int numPages);
 void jsStdAbort(const char* messageStrPntr)
 void jsStdAssertFailure(const char* filePathPntr, int fileLineNum, const char* funcNamePntr, const char* messageStrPntr)
 void jsStdGrowMemory(unsigned int numPages)
-void jsStdPrintInteger(const char* labelStrPntr, int number)
-void jsStdPrintFloat(const char* labelStrPntr, double number)
-void jsStdPrintString(const char* labelStrPntr, const char* strPntr)
 */
