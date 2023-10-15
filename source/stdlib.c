@@ -45,6 +45,7 @@ void srand(unsigned int seed)
 
 int rand()
 {
+	// Similar to our 64-bit Permuted Congruential in gylib?
 	stdRandState = (6364136223846793005ULL * stdRandState) + 1;
 	return (stdRandState >> 33);
 }

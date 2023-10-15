@@ -104,10 +104,11 @@ function jsPrintFloat(labelStrPntr, number)
 	console.log(labelStr + ": " + number);
 }
 
-function jsPrintString(strPntr)
+function jsPrintString(labelStrPntr, strPntr)
 {
+	let labelStr = wasmPntrToJsString(globalWasmMemory, labelStrPntr);
 	let str = wasmPntrToJsString(globalWasmMemory, strPntr);
-	console.log("String:", str);
+	console.log(labelStr + ": " + str);
 }
 
 apiFuncs = {

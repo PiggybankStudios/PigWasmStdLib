@@ -46,7 +46,8 @@ WASM_EXPORTED_FUNC(void, Initialize)
 	
 	// RunMathTestCases();
 	// RunStringTestCases();
-	RunStdLibTestCases();
+	// RunStdLibTestCases();
+	RunPrintTestCases();
 }
 
 #ifdef TEST_INCLUDE_STD_LIBRARY

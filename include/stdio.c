@@ -3,11 +3,14 @@ File:   stdio.c
 Author: Taylor Robbins
 Date:   10\12\2023
 Description: 
-	** None 
+	** Holds all the implementations for functions declared in stdio.h
 */
+
+#define STB_SPRINTF_IMPLEMENTATION
+#include "stb/stb_sprintf.h"
 
 int vsnprintf(char* bufferPntr, size_t bufferSize, const char* formatStr, va_list args)
 {
-	//TODO: Implement me!
-	return -1;
+	assert(bufferSize <= INT_MAX);
+	return stbsp_vsnprintf(bufferPntr, bufferSize, formatStr, args);
 }

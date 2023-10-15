@@ -6,33 +6,77 @@ Description:
 	** Holds a bunch of test cases for the PigWasm StdLib
 */
 
+bool TestCaseInt_(const char* testCaseStr, int result, int expectedValue)
+{
+	if (result != expectedValue)
+	{
+		jsPrintString("", "Test case failed!");
+		jsPrintString("Test", testCaseStr);
+		jsPrintNumber("Expected", expectedValue);
+		jsPrintNumber("Got", result);
+		return false;
+	}
+	else { return true; }
+}
+#define TestCaseInt(testCase, expectedValue) do { numCases++; if (TestCaseInt_(#testCase, (testCase), (expectedValue))) { numCasesSucceeded++; } } while(0)
+
 bool TestCaseFloat_(const char* testCaseStr, float result, float expectedValue)
 {
 	if (result != expectedValue && !(isnan(result) && isnan(expectedValue)))
 	{
-		jsPrintString("Test case failed!");
-		jsPrintString(testCaseStr);
+		jsPrintString("", "Test case failed!");
+		jsPrintString("Test", testCaseStr);
 		jsPrintFloat("Expected", expectedValue);
 		jsPrintFloat("Got", result);
 		return false;
 	}
 	else { return true; }
 }
-#define TestCaseFloat(testCase, expectedValue) do { numCases++; if (TestCaseFloat_(#testCase, (testCase), (expectedValue))) { numCasesSucceeded++; } } while(0)
+#define TestCaseFloat(testCase, expectedValue) do { if (TestCaseFloat_(#testCase, (testCase), (expectedValue))) { numCasesSucceeded++; } numCases++; } while(0)
 
 bool TestCaseDouble_(const char* testCaseStr, double result, double expectedValue)
 {
 	if (result != expectedValue && !(isnan(result) && isnan(expectedValue)))
 	{
-		jsPrintString("Test case failed!");
-		jsPrintString(testCaseStr);
+		jsPrintString("", "Test case failed!");
+		jsPrintString("Test", testCaseStr);
 		jsPrintFloat("Expected", expectedValue);
 		jsPrintFloat("Got", result);
 		return false;
 	}
 	else { return true; }
 }
-#define TestCaseDouble(testCase, expectedValue) do { numCases++; if (TestCaseDouble_(#testCase, (testCase), (expectedValue))) { numCasesSucceeded++; } } while(0)
+#define TestCaseDouble(testCase, expectedValue) do { if (TestCaseDouble_(#testCase, (testCase), (expectedValue))) { numCasesSucceeded++; } numCases++; } while(0)
+
+bool TestCasePrint_(const char* expectedStr, const char* formatStr, ...)
+{
+	char printBuffer[1024];
+	va_list args;
+	va_start(args, formatStr);
+	int printResult = vsnprintf(&printBuffer[0], sizeof(printBuffer), formatStr, args);
+	va_end(args);
+	if (printResult < 0)
+	{
+		jsPrintString("", "Test case failed!");
+		jsPrintString("Format", formatStr);
+		jsPrintString("Expected", expectedStr);
+		jsPrintNumber("Got Print Error", printResult);
+		return false;
+	}
+	else
+	{
+		if (strncmp(&printBuffer[0], expectedStr, sizeof(printBuffer)) != 0)
+		{
+			jsPrintString("", "Test case failed!");
+			jsPrintString("Format", formatStr);
+			jsPrintString("Expected", expectedStr);
+			jsPrintString("Got", &printBuffer[0]);
+			return false;
+		}
+		else { return true; }
+	}
+}
+#define TestCasePrint(expectedStr, formatStr, ...) do { if (TestCasePrint_((expectedStr), (formatStr), ##__VA_ARGS__)) { numCasesSucceeded++; } numCases++; } while(0)
 
 void RunMathTestCases()
 {
@@ -533,6 +577,22 @@ void RunStdLibTestCases()
 	int numCases = 0;
 	int numCasesSucceeded = 0;
 	
+	srand(1234);
+	TestCaseInt(rand(), 0x315C8716);
+	TestCaseInt(rand(), 0x06600C3B);
+	TestCaseInt(rand(), 0x6878C159);
+	TestCaseInt(rand(), 0x15574C2D);
+	
+	srand(0xCCCCCCCC);
+	TestCaseInt(rand(), 0x025870B6);
+	TestCaseInt(rand(), 0x020C697B);
+	TestCaseInt(rand(), 0x6A7D44AB);
+	TestCaseInt(rand(), 0x71769229);
+	
+	srand(4321); rand(); rand(); srand(0xCCCCCCCC);
+	TestCaseInt(rand(), 0x025870B6);
+	TestCaseInt(rand(), 0x020C697B);
+	
 	TestCaseDouble(atof(" "), 0.0);
 	TestCaseDouble(atof("0.5"), 0.5);
 	TestCaseDouble(atof("1.2"), 1.2);
@@ -559,6 +619,53 @@ void RunStdLibTestCases()
 	TestCaseDouble(atof("3.1e2"), 3.1e2);
 	TestCaseDouble(atof("3.1e-2"), 0.031000000923872003); //pretty close to 0.031
 	TestCaseDouble(atof("1.23e-20"), 0.000000000000000000012300003665686174); //pretty close to 0.0...0123
+	
+	if (numCasesSucceeded == numCases)
+	{
+		jsPrintNumber("All StdLib Tests Succeeded", numCases);
+	}
+	else
+	{
+		jsPrintNumber("Some StdLib Tests Failed", numCases);
+		jsPrintNumber("Successes", numCasesSucceeded);
+		jsPrintNumber("Failures", numCases - numCasesSucceeded);
+	}
+}
+
+void RunPrintTestCases()
+{
+	int numCases = 0;
+	int numCasesSucceeded = 0;
+	
+	TestCasePrint("1234", "%d", 1234);
+	TestCasePrint("1234", "%i", 1234);
+	TestCasePrint("1234", "%u", 1234);
+	TestCasePrint("2322", "%o", 1234);
+	TestCasePrint("Hello World!", "%s %s", "Hello", "World!");
+	TestCasePrint("We've done 5 cases so far...", "We've done %d case%s so far...", numCases, (numCases == 1) ? "" : "s");
+	TestCasePrint("Hell", "%.4s", "Hello World!");
+	TestCasePrint("Hello W", "%.*s", 7, "Hello World!");
+	TestCasePrint("1.234000", "%f", 1.234f);
+	TestCasePrint("1.23", "%.2f", 1.234f);
+	TestCasePrint("1.234", "%g", 1.234f);
+	TestCasePrint("1.234000e+00", "%e", 1.234f);
+	TestCasePrint("1.234000e+20", "%e", 1.234e20);
+	TestCasePrint("123400000000000000000.000000", "%f", 1.234e20);
+	TestCasePrint("1.234e+20", "%g", 1.234e20);
+	TestCasePrint("1.234568", "%f", 1.23456789123); //TODO: %f doesn't seem to be support lots of numbers after the period? Can we format doubles reliably?
+	TestCasePrint("1.23457", "%g", 1.23456789123);
+	TestCasePrint("1.234567891230000", "%.15f", 1.23456789123);
+	TestCasePrint("1.23456789123", "%.15g", 1.23456789123);
+	TestCasePrint("1.2345678912356779", "%.150g", 1.234567891235678);
+	TestCasePrint("1", "%.0f", 1.234f);
+	TestCasePrint("123,456,789", "%'d", 123456789);
+	TestCasePrint("ff802abc", "%x", 0xFF802ABC);
+	TestCasePrint("FF802ABC", "%X", 0xFF802ABC);
+	TestCasePrint("11223344FF802ABC", "%llX", 0x11223344FF802ABCULL);
+	TestCasePrint("FF802ABC", "%X", 0x11223344FF802ABCULL);
+	TestCasePrint("The letter 'X'", "The letter \'%c\'", 0x58);
+	TestCasePrint("1,234,605,619,290,319,548", "%'llu", 0x11223344FF802ABCULL);
+	TestCasePrint("-81,684,114,683,472,572", "%'lld", -0x01223344FF802ABCLL);
 	
 	if (numCasesSucceeded == numCases)
 	{

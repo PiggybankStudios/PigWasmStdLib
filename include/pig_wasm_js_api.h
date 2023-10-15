@@ -15,6 +15,6 @@ WASM_IMPORTED_FUNC void jsGrowMemory(unsigned int numPages);
 WASM_IMPORTED_FUNC void jsTestFunction();
 WASM_IMPORTED_FUNC void jsPrintNumber(const char* labelStrPntr, int number);
 WASM_IMPORTED_FUNC void jsPrintFloat(const char* labelStrPntr, double number);
-WASM_IMPORTED_FUNC void jsPrintString(const char* strPntr);
+WASM_IMPORTED_FUNC void jsPrintString(const char* labelStrPntr, const char* strPntr);
 
 #endif //  _PIG_WASM_JS_API_H
