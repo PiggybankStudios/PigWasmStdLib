@@ -251,6 +251,7 @@
 			"long double scalbnl(long double value, int power)",
 			"size_t strlen(const char* str)",
 			"size_t wcslen(const wchar_t* str)",
+			"uint32_t GetHeapBaseAddress()",
 			"uint32_t top12(double value)",
 			"uint32_t top16(double x)",
 			"unsigned __FLOAT_BITS(float value)",

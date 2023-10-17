@@ -160,17 +160,11 @@ async function PigWasm_Init(wasmMemory, initialMemPageCount, wasmFilePath, appAp
 	
 	// console.log("Before loading wasm module we have " + wasmMemory.buffer.byteLength);
 	wasmModule = await loadWasmModule(wasmFilePath, wasmEnvironment);
+	stdGlobals.heapBase = wasmModule.exports.GetHeapBaseAddress();
 	// console.log("After loading wasm module we now have " + wasmMemory.buffer.byteLength);
 	// console.log("WasmModule:", wasmModule);
 	
 	wasmModule.exports.InitStdLib(initialMemPageCount);
-	
-	stdGlobals.heapBase = wasmModule.exports.GetStackBase();
-	stdGlobals.heapBase += 1024; //1kB should account for any innacuracy in our crude method of calculating the stack base
-	if ((stdGlobals.heapBase % WASM_PAGE_SIZE) != 0)
-	{
-		stdGlobals.heapBase += WASM_PAGE_SIZE - (stdGlobals.heapBase % WASM_PAGE_SIZE); //align to a page barrier
-	}
 	
 	stdGlobals.wasmModule = wasmModule;
 	return wasmModule;

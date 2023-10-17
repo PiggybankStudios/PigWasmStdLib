@@ -24,7 +24,11 @@ void* GetHeapBasePntr()
 {
 	return &__heap_base;
 }
-uint32_t GetHeapBaseAddress()
+// +==============================+
+// |      GetHeapBaseAddress      |
+// +==============================+
+// uint32_t GetHeapBaseAddress()
+WASM_EXPORTED_FUNC(uint32_t, GetHeapBaseAddress)
 {
 	void* basePntr = GetHeapBasePntr();
 	return (uint32_t)basePntr;
