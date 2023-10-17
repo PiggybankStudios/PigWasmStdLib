@@ -39,7 +39,7 @@ async function MainLoop()
 	glContext = PigWasm_CreateGlContext(canvas);
 	
 	// console.log("Calling init...");
-	initialWasmPageCount = 64;
+	initialWasmPageCount = 7;
 	wasmMemory = PigWasm_InitMemory(initialWasmPageCount);
 	wasmModule = await PigWasm_Init(
 		wasmMemory,
@@ -52,6 +52,8 @@ async function MainLoop()
 	let initializeTimestamp = Math.floor(Date.now() / 1000); //TODO: Should we be worried about this being a 32-bit float?
 	// console.log("Calling Initialize...");
 	wasmModule.exports.Initialize(initializeTimestamp);
+	
+	console.log("stackBase:", stdGlobals.heapBase);
 	
 	// window.addEventListener("mousemove", function(event)
 	// {

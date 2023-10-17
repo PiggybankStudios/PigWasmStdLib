@@ -31,9 +31,21 @@ Description:
 #include "stdio.c"
 
 // +==============================+
-// |      InitPigWasmStdLib       |
+// |          InitStdLib          |
 // +==============================+
 WASM_EXPORTED_FUNC(void, InitStdLib, uint32_t initialMemPageCount)
 {
 	InitWasmMemory(initialMemPageCount);
+}
+
+// +==============================+
+// |         GetStackBase         |
+// +==============================+
+WASM_EXPORTED_FUNC(unsigned int, GetStackBase)
+{
+	int var1 = 10;
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Wreturn-stack-address"
+	return (size_t)&var1;
+	#pragma clang diagnostic pop
 }

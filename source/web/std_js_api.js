@@ -11,11 +11,14 @@ Description:
 	** file which will be included by index.html
 */
 
+const WASM_PAGE_SIZE = (64 * 1024); //64kB
+
 // +--------------------------------------------------------------+
 // |                           Globals                            |
 // +--------------------------------------------------------------+
 var stdGlobals =
 {
+	heapBase: 0,
 	canvas: null,
 	glContext: null,
 	wasmMemory: null,
@@ -85,6 +88,11 @@ function jsStdAssertFailure(filePathPntr, fileLineNum, funcNamePntr, messageStrP
 	throw new Error(outputMessage);
 }
 
+function jsStdGetHeapSize()
+{
+	return stdGlobals.wasmMemory.buffer.byteLength - stdGlobals.heapBase;
+}
+
 function jsStdGrowMemory(numPages)
 {
 	// console.log("Memory growing by " + numPages + " pages");
@@ -95,6 +103,7 @@ jsStdApiFuncs = {
 	jsStdAbort: jsStdAbort,
 	jsStdAssertFailure: jsStdAssertFailure,
 	jsStdGrowMemory: jsStdGrowMemory,
+	jsStdGetHeapSize: jsStdGetHeapSize,
 };
 
 // +--------------------------------------------------------------+
@@ -155,6 +164,13 @@ async function PigWasm_Init(wasmMemory, initialMemPageCount, wasmFilePath, appAp
 	// console.log("WasmModule:", wasmModule);
 	
 	wasmModule.exports.InitStdLib(initialMemPageCount);
+	
+	stdGlobals.heapBase = wasmModule.exports.GetStackBase();
+	stdGlobals.heapBase += 1024; //1kB should account for any innacuracy in our crude method of calculating the stack base
+	if ((stdGlobals.heapBase % WASM_PAGE_SIZE) != 0)
+	{
+		stdGlobals.heapBase += WASM_PAGE_SIZE - (stdGlobals.heapBase % WASM_PAGE_SIZE); //align to a page barrier
+	}
 	
 	stdGlobals.wasmModule = wasmModule;
 	return wasmModule;
