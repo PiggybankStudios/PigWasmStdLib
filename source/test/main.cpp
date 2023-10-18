@@ -39,6 +39,4 @@ WASM_EXPORTED_FUNC(void, Initialize)
 	RunStringTestCases();
 	RunStdLibTestCases();
 	RunStdioTestCases();
-	
-	jsPrintInteger("jsStdGetHeapSize", jsStdGetHeapSize());
 }

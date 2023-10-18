@@ -39,7 +39,7 @@ async function MainLoop()
 	glContext = PigWasm_CreateGlContext(canvas);
 	
 	// console.log("Calling init...");
-	initialWasmPageCount = 7;
+	initialWasmPageCount = 4;
 	wasmMemory = PigWasm_InitMemory(initialWasmPageCount);
 	wasmModule = await PigWasm_Init(
 		wasmMemory,

@@ -46,7 +46,9 @@ void InitWasmMemory(uint32_t numInitialPages)
 
 void* WasmMemoryAllocate(uint32_t numBytes)
 {
-	uint32_t numPagesNeeded = (WasmMemoryHeapCurrentAddress + numBytes + 1) / WASM_MEMORY_PAGE_SIZE;
+	uint32_t numBytesNeeded = (WasmMemoryHeapCurrentAddress + numBytes);
+	uint32_t numPagesNeeded = numBytesNeeded / WASM_MEMORY_PAGE_SIZE;
+	if ((numBytesNeeded % WASM_MEMORY_PAGE_SIZE) != 0) { numPagesNeeded++; }
 	if (numPagesNeeded > WASM_MEMORY_MAX_NUM_PAGES)
 	{
 		jsStdAbort("The WebAssembly module has run out of memory! WebAssembly only allows for 2GB of memory to be allocated per module", -1);

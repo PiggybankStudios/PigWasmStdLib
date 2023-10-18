@@ -95,7 +95,8 @@ function jsStdGetHeapSize()
 
 function jsStdGrowMemory(numPages)
 {
-	// console.log("Memory growing by " + numPages + " pages");
+	let currentPageCount = stdGlobals.wasmMemory.buffer.byteLength / WASM_PAGE_SIZE;
+	// console.log("Memory growing by " + numPages + " pages (" + currentPageCount + " -> " + (currentPageCount + numPages) + ")");
 	stdGlobals.wasmMemory.grow(numPages);
 }
 
@@ -164,7 +165,13 @@ async function PigWasm_Init(wasmMemory, initialMemPageCount, wasmFilePath, appAp
 	// console.log("After loading wasm module we now have " + wasmMemory.buffer.byteLength);
 	// console.log("WasmModule:", wasmModule);
 	
-	wasmModule.exports.InitStdLib(initialMemPageCount);
+	let numMemoryPagesAfterLoad = stdGlobals.wasmMemory.buffer.byteLength / WASM_PAGE_SIZE;
+	if ((stdGlobals.wasmMemory.buffer.byteLength % WASM_PAGE_SIZE) != 0)
+	{
+		console.warn("wasmMemory.buffer.byteLength (" + stdGlobals.wasmMemory.buffer.byteLength + ") is not a multiple of WASM_PAGE_SIZE (" + WASM_PAGE_SIZE + ")");
+		numMemoryPagesAfterLoad++;
+	}
+	wasmModule.exports.InitStdLib(numMemoryPagesAfterLoad);
 	
 	stdGlobals.wasmModule = wasmModule;
 	return wasmModule;
