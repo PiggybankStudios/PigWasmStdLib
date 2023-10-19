@@ -177,6 +177,7 @@
 			"#define signbit(value)",
 			"#define strstr_BITOP(a,b,op)",
 			"StdAssertFailure(const char* filePath, int fileLineNum, const char* funcName, const char* conditionStr)",
+			"WASM_IMPORTED_FUNC void jsStdDebugBreak()",
 			"async function PigWasm_Init(wasmMemory, initialMemPageCount, wasmFilePath, appApiFuncs)",
 			"char* strstr(const char* haystack, const char* needle)",
 			"double __math_divzero(uint32_t sign)",

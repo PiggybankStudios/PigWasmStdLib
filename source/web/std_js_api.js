@@ -88,6 +88,12 @@ function jsStdAssertFailure(filePathPntr, fileLineNum, funcNamePntr, messageStrP
 	throw new Error(outputMessage);
 }
 
+function jsStdDebugBreak()
+{
+	//TODO: This is not a proper solution, really. Can we somehow notify the debugger in Firefox/Chrome/Safari/etc.?
+	alert("A debug breakpoint has been hit!");
+}
+
 function jsStdGetHeapSize()
 {
 	return stdGlobals.wasmMemory.buffer.byteLength - stdGlobals.heapBase;
@@ -100,9 +106,11 @@ function jsStdGrowMemory(numPages)
 	stdGlobals.wasmMemory.grow(numPages);
 }
 
-jsStdApiFuncs = {
+jsStdApiFuncs =
+{
 	jsStdAbort: jsStdAbort,
 	jsStdAssertFailure: jsStdAssertFailure,
+	jsStdDebugBreak: jsStdDebugBreak,
 	jsStdGrowMemory: jsStdGrowMemory,
 	jsStdGetHeapSize: jsStdGetHeapSize,
 };

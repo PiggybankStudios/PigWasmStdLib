@@ -8,5 +8,5 @@ Description:
 
 void __debugbreak()
 {
-	//TODO: Implement me!
+	jsStdDebugBreak();
 }

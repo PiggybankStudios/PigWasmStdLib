@@ -12,7 +12,9 @@ The implementation of various functions rely on imports from javascript to the W
 ```cpp
 void jsStdAbort(const char* messageStrPntr);
 void jsStdAssertFailure(const char* filePathPntr, int fileLineNum, const char* funcNamePntr, const char* messageStrPntr);
+void jsStdDebugBreak();
 void jsStdGrowMemory(unsigned int numPages);
+unsigned int jsStdGetHeapSize();
 ```
 
 # Functions
@@ -23,7 +25,7 @@ void assert(bool condition); //macro
 ```
 ### intrin.h
 ```cpp
-void __debugbreak(); //TODO: Currently empty
+void __debugbreak();
 ```
 ### math.h
 ```cpp

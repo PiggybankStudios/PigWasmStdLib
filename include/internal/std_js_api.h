@@ -11,6 +11,7 @@ Description:
 
 WASM_IMPORTED_FUNC _Noreturn void jsStdAbort(const char* messageStrPntr, int exitCode);
 WASM_IMPORTED_FUNC _Noreturn void jsStdAssertFailure(const char* filePathPntr, int fileLineNum, const char* funcNamePntr, const char* messageStrPntr);
+WASM_IMPORTED_FUNC void jsStdDebugBreak();
 WASM_IMPORTED_FUNC void jsStdGrowMemory(unsigned int numPages);
 WASM_IMPORTED_FUNC unsigned int jsStdGetHeapSize();
 
