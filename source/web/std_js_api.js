@@ -86,7 +86,7 @@ function jsStdAssertFailure(filePathPntr, fileLineNum, funcNamePntr, conditionSt
 	let outputMessage = "";
 	if (messageStrPntr != 0)
 	{
-		let messageStr =  ? wasmPntrToJsString(stdGlobals.wasmMemory, messageStrPntr) : null;
+		let messageStr = wasmPntrToJsString(stdGlobals.wasmMemory, messageStrPntr);
 		outputMessage = "Assertion failed, " + messageStr + " (" + conditionStr + ") is not true! In " + filePath + ":" + fileLineNum + " " + funcName + "(...)";
 	}
 	else
