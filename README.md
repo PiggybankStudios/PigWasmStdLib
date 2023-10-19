@@ -11,7 +11,7 @@ Many of the implementations are based on functions from [musl libc](https://musl
 The implementation of various functions rely on imports from javascript to the WASM module. Here's the full list of imports that we expect (javascript implementations for these functions is provided in std_js_api.js).
 ```cpp
 void jsStdAbort(const char* messageStrPntr);
-void jsStdAssertFailure(const char* filePathPntr, int fileLineNum, const char* funcNamePntr, const char* messageStrPntr);
+void jsStdAssertFailure(const char* filePathPntr, int fileLineNum, const char* funcNamePntr, const char* conditionStrPntr, const char* messageStrPntr);
 void jsStdDebugBreak();
 void jsStdGrowMemory(unsigned int numPages);
 unsigned int jsStdGetHeapSize();

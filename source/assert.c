@@ -8,5 +8,5 @@ Description:
 
 __attribute__((noreturn)) void StdAssertFailure(const char* filePath, int fileLineNum, const char* funcName, const char* conditionStr)
 {
-	jsStdAssertFailure(filePath, fileLineNum, funcName, conditionStr);
+	jsStdAssertFailure(filePath, fileLineNum, funcName, conditionStr, nullptr);
 }

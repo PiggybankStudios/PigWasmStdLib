@@ -10,7 +10,7 @@ Description:
 #define _STD_JS_API_H
 
 WASM_IMPORTED_FUNC _Noreturn void jsStdAbort(const char* messageStrPntr, int exitCode);
-WASM_IMPORTED_FUNC _Noreturn void jsStdAssertFailure(const char* filePathPntr, int fileLineNum, const char* funcNamePntr, const char* messageStrPntr);
+WASM_IMPORTED_FUNC _Noreturn void jsStdAssertFailure(const char* filePathPntr, int fileLineNum, const char* funcNamePntr, const char* conditionStrPntr, const char* messageStrPntr);
 WASM_IMPORTED_FUNC void jsStdDebugBreak();
 WASM_IMPORTED_FUNC void jsStdGrowMemory(unsigned int numPages);
 WASM_IMPORTED_FUNC unsigned int jsStdGetHeapSize();
@@ -23,7 +23,8 @@ WASM_IMPORTED_FUNC unsigned int jsStdGetHeapSize();
 /*
 @Functions
 void jsStdAbort(const char* messageStrPntr, int exitCode)
-void jsStdAssertFailure(const char* filePathPntr, int fileLineNum, const char* funcNamePntr, const char* messageStrPntr)
+void jsStdAssertFailure(const char* filePathPntr, int fileLineNum, const char* funcNamePntr, const char* conditionStrPntr, const char* messageStrPntr)
+void jsStdDebugBreak()
 void jsStdGrowMemory(unsigned int numPages)
-unsigned int jsStdGetHeapSize();
+unsigned int jsStdGetHeapSize()
 */

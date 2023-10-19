@@ -78,12 +78,21 @@ function jsStdAbort(messageStrPntr, exitCode)
 	throw new Error(exitStr);
 }
 
-function jsStdAssertFailure(filePathPntr, fileLineNum, funcNamePntr, messageStrPntr)
+function jsStdAssertFailure(filePathPntr, fileLineNum, funcNamePntr, conditionStrPntr, messageStrPntr)
 {
 	let filePath = wasmPntrToJsString(stdGlobals.wasmMemory, filePathPntr);
 	let funcName = wasmPntrToJsString(stdGlobals.wasmMemory, funcNamePntr);
-	let messageStr = wasmPntrToJsString(stdGlobals.wasmMemory, messageStrPntr);
-	let outputMessage = "Assertion failed! (" + messageStr + ") is not true! In " + filePath + ":" + fileLineNum + " " + funcName + "(...)";
+	let conditionStr = wasmPntrToJsString(stdGlobals.wasmMemory, conditionStrPntr);
+	let outputMessage = "";
+	if (messageStrPntr != 0)
+	{
+		let messageStr =  ? wasmPntrToJsString(stdGlobals.wasmMemory, messageStrPntr) : null;
+		outputMessage = "Assertion failed, " + messageStr + " (" + conditionStr + ") is not true! In " + filePath + ":" + fileLineNum + " " + funcName + "(...)";
+	}
+	else
+	{
+		outputMessage = "Assertion failed! (" + conditionStr + ") is not true! In " + filePath + ":" + fileLineNum + " " + funcName + "(...)";
+	}
 	console.error(outputMessage);
 	throw new Error(outputMessage);
 }
