@@ -156,9 +156,9 @@ function PigWasm_CreateGlContext(canvas)
 	return canvasContextGl;
 }
 
-function PigWasm_InitMemory(initialMemPageCount)
+function PigWasm_InitMemory(initialMemPageCount, shared)
 {
-	wasmMemory = new WebAssembly.Memory({ initial: initialMemPageCount });
+	wasmMemory = new WebAssembly.Memory({ initial: initialMemPageCount, shared: shared });
 	stdGlobals.wasmMemory = wasmMemory;
 	return wasmMemory
 }

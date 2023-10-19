@@ -40,7 +40,7 @@ async function MainLoop()
 	
 	// console.log("Calling init...");
 	initialWasmPageCount = 4;
-	wasmMemory = PigWasm_InitMemory(initialWasmPageCount);
+	wasmMemory = PigWasm_InitMemory(initialWasmPageCount, false);
 	wasmModule = await PigWasm_Init(
 		wasmMemory,
 		initialWasmPageCount,
