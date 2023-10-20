@@ -17,6 +17,7 @@ Date:   09\23\2023
 #define CONDITIONAL_EXTERN_C_END   //nothing
 #endif
 
+//TODO: __attribute__((import_module("env"), import_name(#functionName)))
 #define WASM_IMPORTED_FUNC CONDITIONAL_EXTERN_C
 #define WASM_EXPORTED_FUNC(returnType, functionName, ...) CONDITIONAL_EXTERN_C returnType __attribute__((export_name(#functionName))) functionName(__VA_ARGS__)
 

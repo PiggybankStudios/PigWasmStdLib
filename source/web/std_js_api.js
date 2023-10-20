@@ -11,7 +11,9 @@ Description:
 	** file which will be included by index.html
 */
 
-const WASM_PAGE_SIZE = (64 * 1024); //64kB
+const WASM_MEMORY_PAGE_SIZE = (64 * 1024); //64kB or 65,536b
+const WASM_MEMORY_MAX_NUM_PAGES = (64 * 1024) //65,536 pages * 64 kB/page = 4GB
+const WASM_MEMORY_MAX_SIZE = (WASM_MEMORY_MAX_NUM_PAGES * WASM_MEMORY_PAGE_SIZE)
 
 // +--------------------------------------------------------------+
 // |                           Globals                            |
@@ -108,9 +110,13 @@ function jsStdGetHeapSize()
 	return stdGlobals.wasmMemory.buffer.byteLength - stdGlobals.heapBase;
 }
 
+//TODO:
+// __builtin_wasm_memory_size(0); // the number of 64Kb pages we have
+// __builtin_wasm_memory_grow(0, blocks); // increases amount of pages
+// __builtin_huge_valf(); // similar to Infinity in JS
 function jsStdGrowMemory(numPages)
 {
-	let currentPageCount = stdGlobals.wasmMemory.buffer.byteLength / WASM_PAGE_SIZE;
+	let currentPageCount = stdGlobals.wasmMemory.buffer.byteLength / WASM_MEMORY_PAGE_SIZE;
 	// console.log("Memory growing by " + numPages + " pages (" + currentPageCount + " -> " + (currentPageCount + numPages) + ")");
 	stdGlobals.wasmMemory.grow(numPages);
 }
@@ -156,9 +162,9 @@ function PigWasm_CreateGlContext(canvas)
 	return canvasContextGl;
 }
 
-function PigWasm_InitMemory(initialMemPageCount, shared)
+function PigWasm_InitMemory(initialMemPageCount, shared, maximumNumPages)
 {
-	wasmMemory = new WebAssembly.Memory({ initial: initialMemPageCount, shared: shared });
+	wasmMemory = new WebAssembly.Memory({ initial: initialMemPageCount, shared: shared, maximum: maximumNumPages });
 	stdGlobals.wasmMemory = wasmMemory;
 	return wasmMemory
 }
@@ -182,10 +188,10 @@ async function PigWasm_Init(wasmMemory, initialMemPageCount, wasmFilePath, appAp
 	// console.log("After loading wasm module we now have " + wasmMemory.buffer.byteLength);
 	// console.log("WasmModule:", wasmModule);
 	
-	let numMemoryPagesAfterLoad = stdGlobals.wasmMemory.buffer.byteLength / WASM_PAGE_SIZE;
-	if ((stdGlobals.wasmMemory.buffer.byteLength % WASM_PAGE_SIZE) != 0)
+	let numMemoryPagesAfterLoad = stdGlobals.wasmMemory.buffer.byteLength / WASM_MEMORY_PAGE_SIZE;
+	if ((stdGlobals.wasmMemory.buffer.byteLength % WASM_MEMORY_PAGE_SIZE) != 0)
 	{
-		console.warn("wasmMemory.buffer.byteLength (" + stdGlobals.wasmMemory.buffer.byteLength + ") is not a multiple of WASM_PAGE_SIZE (" + WASM_PAGE_SIZE + ")");
+		console.warn("wasmMemory.buffer.byteLength (" + stdGlobals.wasmMemory.buffer.byteLength + ") is not a multiple of WASM_MEMORY_PAGE_SIZE (" + WASM_MEMORY_PAGE_SIZE + ")");
 		numMemoryPagesAfterLoad++;
 	}
 	wasmModule.exports.InitStdLib(numMemoryPagesAfterLoad);
