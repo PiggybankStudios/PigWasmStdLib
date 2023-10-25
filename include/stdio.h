@@ -10,6 +10,7 @@ Date:   10\12\2023
 #include <internal/std_common.h>
 
 #include <stdint.h>
+#include <stddef.h>
 #include <stdarg.h>
 
 CONDITIONAL_EXTERN_C_START
